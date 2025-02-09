@@ -56,7 +56,7 @@ export function BookmarkCard({ bookmark, onUpdateTags }: BookmarkCardProps) {
   }
 
   return (
-    <div className="rounded-lg border bg-white p-4 shadow-sm transition-shadow hover:shadow-md h-fit">
+    <div className="rounded-lg border bg-white p-4 shadow-sm transition-shadow hover:shadow-md h-fit w-full inline-block">
       <div className="flex items-start gap-3 mb-3">
         <Image
           src={bookmark.profile_image_url}
@@ -64,12 +64,14 @@ export function BookmarkCard({ bookmark, onUpdateTags }: BookmarkCardProps) {
           width={48}
           height={48}
           className="rounded-full"
+          quality={95}
+          priority
         />
-        <div className="flex-1">
+        <div className="flex-1 min-w-0">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <h3 className="font-semibold">{bookmark.name}</h3>
-              <span className="text-sm text-gray-500">@{bookmark.screen_name}</span>
+            <div className="flex items-center gap-2 min-w-0">
+              <h3 className="font-semibold truncate">{bookmark.name}</h3>
+              <span className="text-sm text-gray-500 truncate">@{bookmark.screen_name}</span>
             </div>
             <a
               href={bookmark.url}
@@ -93,10 +95,10 @@ export function BookmarkCard({ bookmark, onUpdateTags }: BookmarkCardProps) {
             </a>
           </div>
           
-          <div className="mt-1">
+          <div className="mt-1 break-words">
             {bookmark.full_text.length > 280 ? (
               <div>
-                <p className="text-gray-900">
+                <p className="text-gray-900 whitespace-pre-wrap">
                   {isExpanded 
                     ? renderTextWithLinks(bookmark.full_text)
                     : renderTextWithLinks(bookmark.full_text.slice(0, 280) + '...')}
@@ -109,7 +111,7 @@ export function BookmarkCard({ bookmark, onUpdateTags }: BookmarkCardProps) {
                 </button>
               </div>
             ) : (
-              <p className="text-gray-900">{renderTextWithLinks(bookmark.full_text)}</p>
+              <p className="text-gray-900 whitespace-pre-wrap">{renderTextWithLinks(bookmark.full_text)}</p>
             )}
           </div>
         </div>
@@ -131,6 +133,7 @@ export function BookmarkCard({ bookmark, onUpdateTags }: BookmarkCardProps) {
                   src={media.thumbnail}
                   alt=""
                   fill
+                  quality={100}
                   sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                   className="object-cover hover:opacity-90 transition-opacity"
                 />

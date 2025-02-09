@@ -9,7 +9,7 @@ import { Pagination } from '@/components/ui/Pagination';
 import { UploadModal } from '@/components/bookmarks/UploadModal';
 import { SearchAndFilter } from '@/components/bookmarks/SearchAndFilter';
 
-const ITEMS_PER_PAGE = 12;
+const ITEMS_PER_PAGE = 20;
 
 export default function Home() {
   const [bookmarks, setBookmarks] = useState<Bookmark[]>([]);
@@ -79,24 +79,26 @@ export default function Home() {
   );
 
   return (
-    <main className="container mx-auto px-4 py-8">
-      <div className="mb-8 flex items-center justify-between">
+    <main className="px-4 py-8">
+      <div className="mb-8 flex items-center justify-between max-w-[2000px] mx-auto">
         <h1 className="text-3xl font-bold">TweetVault</h1>
         <Button onClick={() => setIsUploadModalOpen(true)}>
           Upload Bookmarks
         </Button>
       </div>
 
-      <SearchAndFilter
-        onSearch={handleSearch}
-        onTagSelect={handleTagSelect}
-        selectedTag={selectedTag}
-        ref={(ref: { loadTags: () => void } | null) => {
-          if (ref) {
-            reloadTags.current = ref.loadTags;
-          }
-        }}
-      />
+      <div className="max-w-[2000px] mx-auto">
+        <SearchAndFilter
+          onSearch={handleSearch}
+          onTagSelect={handleTagSelect}
+          selectedTag={selectedTag}
+          ref={(ref: { loadTags: () => void } | null) => {
+            if (ref) {
+              reloadTags.current = ref.loadTags;
+            }
+          }}
+        />
+      </div>
 
       {isLoading ? (
         <div className="flex min-h-[400px] items-center justify-center">
@@ -107,7 +109,7 @@ export default function Home() {
         </div>
       ) : (
         <>
-          <div className="columns-1 md:columns-2 lg:columns-3 gap-4">
+          <div className="columns-2 lg:columns-3 xl:columns-4 gap-4 max-w-[2000px] mx-auto [column-fill:balance]">
             {filteredBookmarks.map((bookmark) => (
               <div key={bookmark.id} className="break-inside-avoid mb-4">
                 <BookmarkCard

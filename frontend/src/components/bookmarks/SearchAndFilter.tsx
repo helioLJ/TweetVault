@@ -41,8 +41,8 @@ export const SearchAndFilter = forwardRef<SearchAndFilterRef, SearchAndFilterPro
     };
 
     return (
-      <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center">
-        <div className="relative flex-1">
+      <div className="mb-6 flex flex-col gap-4">
+        <div className="relative w-full">
           <input
             type="search"
             placeholder="Search bookmarks..."
@@ -64,10 +64,10 @@ export const SearchAndFilter = forwardRef<SearchAndFilterRef, SearchAndFilterPro
             />
           </svg>
         </div>
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap gap-2 overflow-x-auto pb-2">
           <button
             onClick={() => onTagSelect(undefined)}
-            className={`rounded-full px-3 py-1 text-sm ${
+            className={`rounded-full px-3 py-1 text-sm whitespace-nowrap ${
               !selectedTag
                 ? 'bg-blue-600 text-white'
                 : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
@@ -79,7 +79,7 @@ export const SearchAndFilter = forwardRef<SearchAndFilterRef, SearchAndFilterPro
             <button
               key={tag.id}
               onClick={() => onTagSelect(tag.name)}
-              className={`rounded-full px-3 py-1 text-sm ${
+              className={`rounded-full px-3 py-1 text-sm whitespace-nowrap ${
                 selectedTag === tag.name
                   ? 'bg-blue-600 text-white'
                   : 'bg-gray-100 text-gray-700 hover:bg-gray-200'

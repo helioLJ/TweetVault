@@ -3,6 +3,7 @@ import { Bookmark } from '@/types';
 import Image from 'next/image';
 import { FormattedDate } from './FormattedDate';
 import { MediaModal } from './MediaModal';
+import { linkify } from '@/lib/utils';
 
 interface BookmarkCardProps {
   bookmark: Bookmark;
@@ -16,6 +17,7 @@ export function BookmarkCard({ bookmark, onUpdateTags }: BookmarkCardProps) {
     url: string;
     type: 'image' | 'video';
   }>(null);
+  const [isExpanded, setIsExpanded] = useState(false);
 
   function handleAddTag(e: React.KeyboardEvent) {
     if (e.key === 'Enter' && newTag.trim()) {
@@ -33,9 +35,29 @@ export function BookmarkCard({ bookmark, onUpdateTags }: BookmarkCardProps) {
     onUpdateTags(bookmark.id, updatedTags);
   }
 
+  // Function to render text with clickable links
+  function renderTextWithLinks(text: string) {
+    return text.split(/\s+/).map((word, index) => {
+      if (word.match(/^(https?:\/\/[^\s]+)/)) {
+        return (
+          <a
+            key={index}
+            href={word}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-blue-600 hover:underline break-all"
+          >
+            {word}
+          </a>
+        );
+      }
+      return <span key={index}>{word} </span>;
+    });
+  }
+
   return (
-    <div className="rounded-lg border bg-white p-4 shadow-sm transition-shadow hover:shadow-md">
-      <div className="flex items-start gap-3">
+    <div className="rounded-lg border bg-white p-4 shadow-sm transition-shadow hover:shadow-md h-fit">
+      <div className="flex items-start gap-3 mb-3">
         <Image
           src={bookmark.profile_image_url}
           alt={bookmark.name}
@@ -70,73 +92,91 @@ export function BookmarkCard({ bookmark, onUpdateTags }: BookmarkCardProps) {
               </svg>
             </a>
           </div>
-          <p className="mt-1 text-gray-900">{bookmark.full_text}</p>
           
-          {bookmark.media.length > 0 && (
-            <div className="mt-3 grid grid-cols-2 gap-2">
-              {bookmark.media.map((media) => (
-                <div 
-                  key={media.id} 
-                  className="relative aspect-video cursor-pointer"
-                  onClick={() => setSelectedMedia({
-                    url: media.original,
-                    type: media.type === 'photo' ? 'image' : 'video'
-                  })}
+          <div className="mt-1">
+            {bookmark.full_text.length > 280 ? (
+              <div>
+                <p className="text-gray-900">
+                  {isExpanded 
+                    ? renderTextWithLinks(bookmark.full_text)
+                    : renderTextWithLinks(bookmark.full_text.slice(0, 280) + '...')}
+                </p>
+                <button
+                  onClick={() => setIsExpanded(!isExpanded)}
+                  className="mt-1 text-blue-600 hover:underline text-sm"
                 >
-                  <Image
-                    src={media.thumbnail}
-                    alt=""
-                    fill
-                    sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                    className="rounded-lg object-cover hover:opacity-90 transition-opacity"
-                  />
-                </div>
-              ))}
-            </div>
-          )}
-          
-          <div className="mt-3">
-            <div className="flex flex-wrap gap-1">
-              {bookmark.tags.map((tag) => (
-                <span
-                  key={tag.id}
-                  className="group flex items-center gap-1 rounded-full bg-blue-100 px-2 py-0.5 text-sm text-blue-700"
-                >
-                  {tag.name}
-                  <button
-                    onClick={() => handleRemoveTag(tag.name)}
-                    className="ml-1 hidden rounded-full p-0.5 hover:bg-blue-200 group-hover:block"
-                    aria-label={`Remove ${tag.name} tag`}
-                  >
-                    ×
-                  </button>
-                </span>
-              ))}
-              <div className="relative">
-                <input
-                  type="text"
-                  placeholder="Add tag..."
-                  className="inline-flex h-6 rounded-full bg-gray-100 px-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  value={newTag}
-                  onChange={(e) => setNewTag(e.target.value)}
-                  onKeyDown={handleAddTag}
-                />
+                  {isExpanded ? 'Show less' : 'Read more'}
+                </button>
               </div>
-            </div>
-          </div>
-          
-          <div className="mt-3 flex items-center gap-4 text-sm text-gray-500">
-            <span title="Likes">♥ {bookmark.favorite_count}</span>
-            <span title="Retweets">🔄 {bookmark.retweet_count}</span>
-            <span title="Views">👁 {bookmark.views_count}</span>
-            <span className="ml-auto">
-              <FormattedDate date={bookmark.created_at} />
-            </span>
+            ) : (
+              <p className="text-gray-900">{renderTextWithLinks(bookmark.full_text)}</p>
+            )}
           </div>
         </div>
       </div>
 
-      {/* Media Modal */}
+      {bookmark.media.length > 0 && (
+        <div className="my-4">
+          <div className="grid grid-cols-1 gap-2 justify-center">
+            {bookmark.media.map((media) => (
+              <div 
+                key={media.id} 
+                className="relative aspect-video cursor-pointer overflow-hidden rounded-lg w-full"
+                onClick={() => setSelectedMedia({
+                  url: media.original,
+                  type: media.type === 'photo' ? 'image' : 'video'
+                })}
+              >
+                <Image
+                  src={media.thumbnail}
+                  alt=""
+                  fill
+                  sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                  className="object-cover hover:opacity-90 transition-opacity"
+                />
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      <div className="space-y-3">
+        <div className="flex flex-wrap gap-1.5">
+          {bookmark.tags.map((tag) => (
+            <span
+              key={tag.id}
+              className="group flex items-center gap-1 rounded-full bg-blue-100 px-2.5 py-1 text-sm text-blue-700"
+            >
+              {tag.name}
+              <button
+                onClick={() => handleRemoveTag(tag.name)}
+                className="ml-1 hidden rounded-full p-0.5 hover:bg-blue-200 group-hover:block"
+                aria-label={`Remove ${tag.name} tag`}
+              >
+                ×
+              </button>
+            </span>
+          ))}
+          <input
+            type="text"
+            placeholder="Add tag..."
+            className="w-20 rounded-full bg-blue-50 px-2.5 py-1 text-sm text-blue-700 placeholder:text-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-blue-100 border-none h-[26px] overflow-x-auto whitespace-nowrap scrollbar-none"
+            value={newTag}
+            onChange={(e) => setNewTag(e.target.value)}
+            onKeyDown={handleAddTag}
+          />
+        </div>
+
+        <div className="flex items-center gap-4 text-sm text-gray-500 border-t pt-3">
+          <span title="Likes">♥ {bookmark.favorite_count}</span>
+          <span title="Retweets">🔄 {bookmark.retweet_count}</span>
+          <span title="Views">👁 {bookmark.views_count}</span>
+          <span className="ml-auto">
+            <FormattedDate date={bookmark.created_at} />
+          </span>
+        </div>
+      </div>
+
       {selectedMedia && (
         <MediaModal
           media={selectedMedia}

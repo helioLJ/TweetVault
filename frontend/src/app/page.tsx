@@ -107,13 +107,14 @@ export default function Home() {
         </div>
       ) : (
         <>
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          <div className="columns-1 md:columns-2 lg:columns-3 gap-4">
             {filteredBookmarks.map((bookmark) => (
-              <BookmarkCard
-                key={bookmark.id}
-                bookmark={bookmark}
-                onUpdateTags={handleUpdateTags}
-              />
+              <div key={bookmark.id} className="break-inside-avoid mb-4">
+                <BookmarkCard
+                  bookmark={bookmark}
+                  onUpdateTags={handleUpdateTags}
+                />
+              </div>
             ))}
           </div>
 

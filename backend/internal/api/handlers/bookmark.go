@@ -5,7 +5,6 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
-	"github.com/helioLJ/tweetvault/internal/models"
 	"github.com/helioLJ/tweetvault/internal/services"
 )
 
@@ -21,7 +20,12 @@ func NewBookmarkHandler(db *gorm.DB) *BookmarkHandler {
 
 // List returns all bookmarks with optional filtering
 func (h *BookmarkHandler) List(c *gin.Context) {
-	bookmarks, total, err := h.service.List(c.Query("tag"))
+	tag := c.Query("tag")
+	search := c.Query("search")
+	page := c.DefaultQuery("page", "1")
+	limit := c.DefaultQuery("limit", "12")
+
+	bookmarks, total, err := h.service.List(tag, search, page, limit)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return

@@ -3,6 +3,7 @@ package services
 import (
 	"github.com/helioLJ/tweetvault/internal/models"
 	"gorm.io/gorm"
+	"strconv"
 )
 
 type BookmarkService struct {
@@ -13,9 +14,10 @@ func NewBookmarkService(db *gorm.DB) *BookmarkService {
 	return &BookmarkService{db: db}
 }
 
-func (s *BookmarkService) List(tag string) ([]models.Bookmark, int64, error) {
+func (s *BookmarkService) List(tag string, search string, page string, limit string) ([]models.Bookmark, int64, error) {
 	var bookmarks []models.Bookmark
-	query := s.db.Preload("Media").Preload("Tags")
+	var total int64
+	query := s.db.Model(&models.Bookmark{})
 
 	if tag != "" {
 		query = query.Joins("JOIN bookmark_tags ON bookmarks.id = bookmark_tags.bookmark_id").
@@ -23,16 +25,23 @@ func (s *BookmarkService) List(tag string) ([]models.Bookmark, int64, error) {
 			Where("tags.name = ?", tag)
 	}
 
-	var total int64
-	if err := query.Model(&models.Bookmark{}).Count(&total).Error; err != nil {
-		return nil, 0, err
+	if search != "" {
+		query = query.Where("full_text ILIKE ? OR name ILIKE ? OR screen_name ILIKE ?", 
+			"%"+search+"%", "%"+search+"%", "%"+search+"%")
 	}
 
-	if err := query.Find(&bookmarks).Error; err != nil {
-		return nil, 0, err
-	}
+	query.Count(&total)
 
-	return bookmarks, total, nil
+	// Parse pagination params
+	pageNum, _ := strconv.Atoi(page)
+	limitNum, _ := strconv.Atoi(limit)
+	offset := (pageNum - 1) * limitNum
+
+	err := query.Preload("Tags").Preload("Media").
+		Offset(offset).Limit(limitNum).
+		Find(&bookmarks).Error
+
+	return bookmarks, total, err
 }
 
 func (s *BookmarkService) Get(id string) (*models.Bookmark, error) {

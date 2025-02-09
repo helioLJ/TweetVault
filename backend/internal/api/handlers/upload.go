@@ -6,11 +6,13 @@ import (
 	"io"
 	"mime/multipart"
 	"net/http"
+	"os"
 	"time"
 
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 	"github.com/helioLJ/tweetvault/internal/models"
+	"archive/zip"
 )
 
 type UploadHandler struct {
@@ -198,8 +200,45 @@ func getExtensionForMediaType(mediaType string) string {
 }
 
 func extractFileFromZip(zipFile *multipart.FileHeader, fileName string) ([]byte, error) {
-	// Implement ZIP extraction logic
-	// This will need to use archive/zip package to extract the specific file
-	// and return its contents as []byte
-	return nil, nil
+	// Open the uploaded zip file
+	src, err := zipFile.Open()
+	if err != nil {
+		return nil, fmt.Errorf("failed to open zip file: %w", err)
+	}
+	defer src.Close()
+
+	// Create a temporary file to store the zip content
+	tempFile, err := os.CreateTemp("", "upload-*.zip")
+	if err != nil {
+		return nil, fmt.Errorf("failed to create temp file: %w", err)
+	}
+	defer os.Remove(tempFile.Name())
+	defer tempFile.Close()
+
+	// Copy zip content to temp file
+	if _, err := io.Copy(tempFile, src); err != nil {
+		return nil, fmt.Errorf("failed to copy zip content: %w", err)
+	}
+
+	// Open the zip archive
+	reader, err := zip.OpenReader(tempFile.Name())
+	if err != nil {
+		return nil, fmt.Errorf("failed to open zip archive: %w", err)
+	}
+	defer reader.Close()
+
+	// Find and extract the requested file
+	for _, file := range reader.File {
+		if file.Name == fileName {
+			rc, err := file.Open()
+			if err != nil {
+				return nil, fmt.Errorf("failed to open file in zip: %w", err)
+			}
+			defer rc.Close()
+
+			return io.ReadAll(rc)
+		}
+	}
+
+	return nil, fmt.Errorf("file %s not found in zip archive", fileName)
 }

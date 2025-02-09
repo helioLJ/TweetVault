@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { Bookmark } from '@/types';
 import { api } from '@/lib/api';
 import { BookmarkCard } from '@/components/bookmarks/BookmarkCard';
@@ -19,6 +19,7 @@ export default function Home() {
   const [totalPages, setTotalPages] = useState(1);
   const [isLoading, setIsLoading] = useState(true);
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
+  const reloadTags = useRef<() => void>(() => {});
 
   useEffect(() => {
     loadBookmarks();
@@ -44,7 +45,19 @@ export default function Home() {
   async function handleUpdateTags(id: string, tags: string[]) {
     try {
       await api.updateBookmarkTags(id, tags);
-      loadBookmarks();
+      setBookmarks(currentBookmarks => 
+        currentBookmarks.map(bookmark => 
+          bookmark.id === id 
+            ? { ...bookmark, tags: tags.map((name, index) => ({ 
+                id: -index - 1,
+                name,
+                created_at: new Date().toISOString(),
+                updated_at: new Date().toISOString()
+              })) }
+            : bookmark
+        )
+      );
+      reloadTags.current();
     } catch (error) {
       console.error('Failed to update tags:', error);
     }
@@ -52,13 +65,18 @@ export default function Home() {
 
   function handleSearch(query: string) {
     setSearchQuery(query);
-    setCurrentPage(1);
   }
 
   function handleTagSelect(tag: string | undefined) {
     setSelectedTag(tag);
     setCurrentPage(1);
   }
+
+  const filteredBookmarks = bookmarks.filter(bookmark => 
+    bookmark.full_text.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    bookmark.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    bookmark.screen_name.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   return (
     <main className="container mx-auto px-4 py-8">
@@ -73,6 +91,11 @@ export default function Home() {
         onSearch={handleSearch}
         onTagSelect={handleTagSelect}
         selectedTag={selectedTag}
+        ref={(ref: { loadTags: () => void } | null) => {
+          if (ref) {
+            reloadTags.current = ref.loadTags;
+          }
+        }}
       />
 
       {isLoading ? (
@@ -85,7 +108,7 @@ export default function Home() {
       ) : (
         <>
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {bookmarks.map((bookmark) => (
+            {filteredBookmarks.map((bookmark) => (
               <BookmarkCard
                 key={bookmark.id}
                 bookmark={bookmark}
@@ -94,13 +117,13 @@ export default function Home() {
             ))}
           </div>
 
-          {bookmarks.length === 0 && (
+          {filteredBookmarks.length === 0 && (
             <div className="mt-8 text-center text-gray-500">
               No bookmarks found
             </div>
           )}
 
-          {bookmarks.length > 0 && (
+          {filteredBookmarks.length > 0 && (
             <Pagination
               currentPage={currentPage}
               totalPages={totalPages}

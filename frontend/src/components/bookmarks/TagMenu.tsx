@@ -62,10 +62,10 @@ export function TagMenu({ tag, onSuccess, selectedTag }: TagMenuProps) {
 
   if (isDeleting) {
     return (
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[100]" style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0 }}>
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[100]" onClick={(e) => e.stopPropagation()}>
         <div className="bg-white p-6 rounded-lg max-w-md w-full mx-4">
-          <h3 className="text-lg font-semibold mb-2">Delete Tag</h3>
-          <p className="mb-4">
+          <h3 className="text-lg font-semibold mb-2 text-gray-900">Delete Tag</h3>
+          <p className="mb-4 text-gray-700">
             Are you sure you want to delete the tag "{tag.name}"? 
             {bookmarkCount !== null && bookmarkCount > 0 && (
               <span className="block mt-2 text-gray-600">
@@ -77,13 +77,19 @@ export function TagMenu({ tag, onSuccess, selectedTag }: TagMenuProps) {
           <div className="flex justify-end gap-2">
             <button
               className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded"
-              onClick={() => setIsDeleting(false)}
+              onClick={(e) => {
+                e.stopPropagation();
+                setIsDeleting(false);
+              }}
             >
               Cancel
             </button>
             <button
               className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
-              onClick={handleDelete}
+              onClick={(e) => {
+                e.stopPropagation();
+                handleDelete();
+              }}
             >
               Delete
             </button>
@@ -94,25 +100,28 @@ export function TagMenu({ tag, onSuccess, selectedTag }: TagMenuProps) {
   }
 
   return (
-    <span className="inline-flex items-center ml-1" onClick={(e) => e.stopPropagation()}>
-      <div 
-        onClick={handleDotsClick}
+    <div className="inline-block" onClick={(e) => e.stopPropagation()}>
+      <button 
+        onClick={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          handleDotsClick(e);
+        }}
         className={`p-1 rounded-full cursor-pointer ${
-          selectedTag === tag.name ? 'text-white hover:bg-blue-700' : 'text-gray-500 hover:bg-gray-200'
+          selectedTag === tag.name ? 'hover:bg-blue-700' : 'text-gray-500 hover:bg-gray-200'
         }`}
       >
         <svg className="w-4 h-4" viewBox="0 0 16 16" fill="currentColor">
           <path d="M3 9.5a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3zm5 0a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3zm5 0a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3z" />
         </svg>
-      </div>
+      </button>
       {isMenuOpen && (
         <>
           <div 
             className="fixed inset-0 z-[90]" 
-            onClick={() => setIsMenuOpen(false)}
+            onClick={() => setIsMenuOpen(false)} 
           />
-          <div 
-            className="fixed bg-white rounded-lg shadow-lg border z-[91]"
+          <div className="fixed bg-white rounded-lg shadow-lg border z-[91] text-gray-900 flex flex-col"
             style={{
               top: `${menuPosition.top}px`,
               left: `${menuPosition.left}px`,
@@ -146,7 +155,7 @@ export function TagMenu({ tag, onSuccess, selectedTag }: TagMenuProps) {
                 </div>
               </div>
             ) : (
-              <div className="py-1 min-w-[120px] flex flex-col text-gray-900">
+              <>
                 <button
                   className="w-full px-4 py-2 text-left text-sm hover:bg-gray-100"
                   onClick={() => setIsEditing(true)}
@@ -155,15 +164,18 @@ export function TagMenu({ tag, onSuccess, selectedTag }: TagMenuProps) {
                 </button>
                 <button
                   className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-gray-100"
-                  onClick={showDeleteConfirmation}
+                  onClick={() => {
+                    showDeleteConfirmation();
+                    setIsMenuOpen(false);
+                  }}
                 >
                   Delete
                 </button>
-              </div>
+              </>
             )}
           </div>
         </>
       )}
-    </span>
+    </div>
   );
 }

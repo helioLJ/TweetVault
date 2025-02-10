@@ -2,12 +2,16 @@ package main
 
 import (
 	"log"
+	"github.com/gin-gonic/gin"
 	"github.com/helioLJ/tweetvault/internal/api/routes"
 	"github.com/helioLJ/tweetvault/internal/database"
 	"github.com/helioLJ/tweetvault/config"
 )
 
 func main() {
+	// Enable Gin debug mode
+	gin.SetMode(gin.DebugMode)
+
 	// Load configuration
 	cfg, err := config.Load()
 	if err != nil {
@@ -20,8 +24,17 @@ func main() {
 		log.Fatalf("Failed to connect to database: %v", err)
 	}
 
-	// Initialize router
+	// Initialize router with custom logging
 	r := routes.SetupRouter(db)
+
+	// Add custom logging middleware
+	r.Use(gin.LoggerWithFormatter(func(param gin.LogFormatterParams) string {
+		// Return detailed error messages if present
+		if param.ErrorMessage != "" {
+			return "ERROR: " + param.ErrorMessage + "\n"
+		}
+		return ""
+	}))
 
 	// Start server
 	log.Printf("Server starting on port %s", cfg.ServerPort)

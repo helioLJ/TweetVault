@@ -1,25 +1,43 @@
 package routes
 
 import (
+	"log"
+
 	"github.com/gin-gonic/gin"
 	"github.com/helioLJ/tweetvault/internal/api/handlers"
 	"gorm.io/gorm"
 )
 
 func SetupRouter(db *gorm.DB) *gin.Engine {
-	r := gin.Default()
+	r := gin.New()
+
+	// Add recovery middleware
+	r.Use(gin.Recovery())
+
+	// Add custom logger middleware
+	r.Use(gin.LoggerWithWriter(gin.DefaultWriter, "/api/health"))
+
+	// Add error logging middleware
+	r.Use(func(c *gin.Context) {
+		c.Next()
+
+		// Print any errors that occurred
+		if len(c.Errors) > 0 {
+			log.Printf("Errors: %v", c.Errors)
+		}
+	})
 
 	// Enable CORS
 	r.Use(func(c *gin.Context) {
 		c.Writer.Header().Set("Access-Control-Allow-Origin", "http://localhost:3000")
 		c.Writer.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
 		c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type")
-		
+
 		if c.Request.Method == "OPTIONS" {
 			c.AbortWithStatus(204)
 			return
 		}
-		
+
 		c.Next()
 	})
 

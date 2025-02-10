@@ -7,7 +7,11 @@ interface FormattedDateProps {
 export function FormattedDate({ date }: FormattedDateProps) {
   return (
     <span className="text-xs text-gray-400">
-      {new Date(date).toLocaleDateString()}
+      {new Date(date).toLocaleDateString(undefined, {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric'
+      })}
     </span>
   );
 } 

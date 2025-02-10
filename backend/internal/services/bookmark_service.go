@@ -38,6 +38,7 @@ func (s *BookmarkService) List(tag string, search string, page string, limit str
 	offset := (pageNum - 1) * limitNum
 
 	err := query.Preload("Tags").Preload("Media").
+		Order("created_at DESC").
 		Offset(offset).Limit(limitNum).
 		Find(&bookmarks).Error
 

@@ -7,12 +7,14 @@ import (
 	"mime/multipart"
 	"net/http"
 	"os"
+	"strconv"
 	"time"
 
-	"github.com/gin-gonic/gin"
-	"gorm.io/gorm"
-	"github.com/helioLJ/tweetvault/internal/models"
 	"archive/zip"
+
+	"github.com/gin-gonic/gin"
+	"github.com/helioLJ/tweetvault/internal/models"
+	"gorm.io/gorm"
 )
 
 type UploadHandler struct {
@@ -56,6 +58,7 @@ func (h *UploadHandler) HandleUpload(c *gin.Context) {
 	// Get the JSON file
 	jsonFile, err := c.FormFile("jsonFile")
 	if err != nil {
+		fmt.Printf("Error getting JSON file: %v\n", err)
 		c.JSON(http.StatusBadRequest, gin.H{"error": "No JSON file provided"})
 		return
 	}
@@ -63,6 +66,7 @@ func (h *UploadHandler) HandleUpload(c *gin.Context) {
 	// Get the ZIP file
 	zipFile, err := c.FormFile("zipFile")
 	if err != nil {
+		fmt.Printf("Error getting ZIP file: %v\n", err)
 		c.JSON(http.StatusBadRequest, gin.H{"error": "No ZIP file provided"})
 		return
 	}
@@ -70,6 +74,7 @@ func (h *UploadHandler) HandleUpload(c *gin.Context) {
 	// Process JSON file
 	bookmarks, err := h.processJSONFile(jsonFile)
 	if err != nil {
+		fmt.Printf("Error processing JSON file: %v\n", err)
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
@@ -78,9 +83,10 @@ func (h *UploadHandler) HandleUpload(c *gin.Context) {
 	tx := h.db.Begin()
 
 	// Process each bookmark
-	for _, bookmark := range bookmarks {
+	for i, bookmark := range bookmarks {
 		// Create or update bookmark
 		if err := h.processBookmark(tx, bookmark, zipFile); err != nil {
+			fmt.Printf("Error processing bookmark %d: %v\n", i, err)
 			tx.Rollback()
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
@@ -89,6 +95,7 @@ func (h *UploadHandler) HandleUpload(c *gin.Context) {
 
 	// Commit transaction
 	if err := tx.Commit().Error; err != nil {
+		fmt.Printf("Error committing transaction: %v\n", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
@@ -150,7 +157,9 @@ func (h *UploadHandler) processBookmark(tx *gorm.DB, tb TwitterBookmark, zipFile
 		mediaFileName := generateMediaFileName(tb.ScreenName, tb.ID, m.Type, i+1)
 		mediaData, err := extractFileFromZip(zipFile, mediaFileName)
 		if err != nil {
-			return err
+			// Log the error but continue processing
+			fmt.Printf("Warning: Could not extract media file %s: %v\n", mediaFileName, err)
+			continue
 		}
 
 		media := models.Media{
@@ -173,18 +182,48 @@ func (h *UploadHandler) processBookmark(tx *gorm.DB, tb TwitterBookmark, zipFile
 
 // Helper functions (to be implemented)
 func parseTwitterTime(timeStr string) time.Time {
-	// Implement time parsing logic
-	t, _ := time.Parse("2006-01-02 15:04:05 -0700", timeStr)
-	return t
+	// Try parsing with timezone offset format (with space before timezone)
+	t, err := time.Parse("2006-01-02 15:04:05 -0700", timeStr)
+	if err == nil {
+		return t
+	}
+
+	// Try parsing with timezone offset format (without space)
+	t, err = time.Parse("2006-01-02 15:04:05-0700", timeStr)
+	if err == nil {
+		return t
+	}
+
+	// Try parsing with timezone offset format (with space and colon in timezone)
+	t, err = time.Parse("2006-01-02 15:04:05 -07:00", timeStr)
+	if err == nil {
+		return t
+	}
+
+	// Fallback to parsing without timezone
+	t, err = time.Parse("2006-01-02 15:04:05", timeStr)
+	if err == nil {
+		return t
+	}
+
+	// If all parsing attempts fail, log the error and return current time
+	fmt.Printf("Error parsing time '%s': %v\n", timeStr, err)
+	return time.Now()
 }
 
 func generateMediaFileName(screenName, tweetID, mediaType string, index int) string {
+	// Extract creation date from tweet ID to match the file naming convention
+	// Twitter IDs contain a timestamp that we can use
+	tweetIDInt, _ := strconv.ParseInt(tweetID, 10, 64)
+	timestamp := time.Unix((tweetIDInt>>22)/1000+1288834974657/1000, 0)
+	dateStr := timestamp.Format("20060102") // Format as YYYYMMDD
+
 	return fmt.Sprintf("%s_%s_%s_%d_%s%s",
 		screenName,
 		tweetID,
 		mediaType,
 		index,
-		time.Now().Format("20060102"),
+		dateStr,
 		getExtensionForMediaType(mediaType))
 }
 
@@ -226,6 +265,13 @@ func extractFileFromZip(zipFile *multipart.FileHeader, fileName string) ([]byte,
 		return nil, fmt.Errorf("failed to open zip archive: %w", err)
 	}
 	defer reader.Close()
+
+	// Debug: Print all files in the ZIP
+	fmt.Println("Files in ZIP:")
+	for _, f := range reader.File {
+		fmt.Printf("- %s\n", f.Name)
+	}
+	fmt.Printf("Looking for file: %s\n", fileName)
 
 	// Find and extract the requested file
 	for _, file := range reader.File {

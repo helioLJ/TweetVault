@@ -30,6 +30,7 @@ type Bookmark struct {
 	Media           []Media         `gorm:"foreignKey:TweetID" json:"media"`
 	Tags            []Tag           `gorm:"many2many:bookmark_tags" json:"tags"`
 	UpdatedAt       time.Time       `gorm:"autoUpdateTime" json:"-"`
+	Archived        bool            `json:"archived" gorm:"default:false"`
 }
 
 // TableName specifies the table name for the Bookmark model

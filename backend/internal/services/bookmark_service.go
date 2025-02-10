@@ -14,10 +14,10 @@ func NewBookmarkService(db *gorm.DB) *BookmarkService {
 	return &BookmarkService{db: db}
 }
 
-func (s *BookmarkService) List(tag string, search string, page string, limit string) ([]models.Bookmark, int64, error) {
+func (s *BookmarkService) List(tag string, search string, page string, limit string, showArchived bool) ([]models.Bookmark, int64, error) {
 	var bookmarks []models.Bookmark
 	var total int64
-	query := s.db.Model(&models.Bookmark{})
+	query := s.db.Model(&models.Bookmark{}).Where("archived = ?", showArchived)
 
 	if tag != "" {
 		query = query.Joins("JOIN bookmark_tags ON bookmarks.id = bookmark_tags.bookmark_id").
@@ -82,4 +82,9 @@ func (s *BookmarkService) UpdateTags(id string, tags []string) error {
 
 func (s *BookmarkService) Delete(id string) error {
 	return s.db.Delete(&models.Bookmark{}, "id = ?", id).Error
+}
+
+func (s *BookmarkService) ToggleArchive(id string) error {
+	return s.db.Model(&models.Bookmark{}).Where("id = ?", id).
+		Update("archived", gorm.Expr("NOT archived")).Error
 }

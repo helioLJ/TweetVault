@@ -1,6 +1,7 @@
 import { useState, useEffect, forwardRef, useImperativeHandle } from 'react';
 import { api } from '@/lib/api';
 import { Tag } from '@/types';
+import { TagMenu } from './TagMenu';
 
 interface SearchAndFilterProps {
   onSearch: (query: string) => void;
@@ -76,17 +77,23 @@ export const SearchAndFilter = forwardRef<SearchAndFilterRef, SearchAndFilterPro
             All
           </button>
           {tags.map((tag) => (
-            <button
-              key={tag.id}
-              onClick={() => onTagSelect(tag.name)}
-              className={`rounded-full px-3 py-1 text-sm whitespace-nowrap ${
-                selectedTag === tag.name
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-              }`}
-            >
-              {tag.name}
-            </button>
+            <div key={tag.id} className="flex items-center rounded-full overflow-hidden">
+              <div
+                onClick={() => onTagSelect(tag.name)}
+                className={`px-3 py-1 text-sm whitespace-nowrap flex items-center cursor-pointer ${
+                  selectedTag === tag.name
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
+              >
+                <span>{tag.name}</span>
+                <TagMenu 
+                  tag={tag} 
+                  onSuccess={loadTags} 
+                  selectedTag={selectedTag}
+                />
+              </div>
+            </div>
           ))}
         </div>
       </div>

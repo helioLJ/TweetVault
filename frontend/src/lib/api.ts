@@ -1,4 +1,17 @@
+import { Bookmark } from "@/types";
+
 const API_BASE_URL = 'http://localhost:8080/api';
+
+interface Statistics {
+  total_bookmarks: number;
+  active_bookmarks: number;
+  archived_bookmarks: number;
+  total_tags: number;
+  top_tags: Array<{
+    name: string;
+    count: number;
+  }>;
+}
 
 export const api = {
   async getBookmarks(params?: {
@@ -6,12 +19,14 @@ export const api = {
     search?: string;
     page?: number;
     limit?: number;
+    archived?: boolean;
   }) {
     const searchParams = new URLSearchParams();
     if (params?.tag) searchParams.append('tag', params.tag);
     if (params?.search) searchParams.append('search', params.search);
     if (params?.page) searchParams.append('page', params.page.toString());
     if (params?.limit) searchParams.append('limit', params.limit.toString());
+    if (params?.archived) searchParams.append('archived', params.archived.toString());
 
     const url = `${API_BASE_URL}/bookmarks?${searchParams.toString()}`;
     const res = await fetch(url);
@@ -40,6 +55,46 @@ export const api = {
     const res = await fetch(`${API_BASE_URL}/upload`, {
       method: 'POST',
       body: formData,
+    });
+    return res.json();
+  },
+
+  async updateTag(id: string, name: string) {
+    const res = await fetch(`${API_BASE_URL}/tags/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name }),
+    });
+    return res.json();
+  },
+
+  async deleteTag(id: string) {
+    const res = await fetch(`${API_BASE_URL}/tags/${id}`, {
+      method: 'DELETE',
+    });
+    return res.json();
+  },
+
+  async getTagBookmarkCount(id: string) {
+    const res = await fetch(`${API_BASE_URL}/tags/${id}/count`);
+    return res.json();
+  },
+
+  async deleteBookmark(id: string) {
+    const res = await fetch(`${API_BASE_URL}/bookmarks/${id}`, {
+      method: 'DELETE',
+    });
+    return res.json();
+  },
+
+  async getStatistics(): Promise<Statistics> {
+    const res = await fetch(`${API_BASE_URL}/statistics`);
+    return res.json();
+  },
+
+  async toggleArchiveBookmark(id: string) {
+    const res = await fetch(`${API_BASE_URL}/bookmarks/${id}/toggle-archive`, {
+      method: 'POST',
     });
     return res.json();
   },

@@ -8,6 +8,9 @@ import { Button } from '@/components/ui/Button';
 import { Pagination } from '@/components/ui/Pagination';
 import { UploadModal } from '@/components/bookmarks/UploadModal';
 import { SearchAndFilter } from '@/components/bookmarks/SearchAndFilter';
+import { SelectionToolbar } from '@/components/bookmarks/SelectionToolbar';
+import { Statistics } from '@/components/bookmarks/Statistics';
+import { StatisticsRef } from '@/components/bookmarks/Statistics';
 
 const ITEMS_PER_PAGE = 20;
 
@@ -16,14 +19,26 @@ export default function Home() {
   const [selectedTag, setSelectedTag] = useState<string>();
   const [searchQuery, setSearchQuery] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const savedSize = localStorage.getItem('bookmark-page-size');
+      return savedSize ? Number(savedSize) : 20;
+    }
+    return 20;
+  });
   const [totalPages, setTotalPages] = useState(1);
   const [isLoading, setIsLoading] = useState(true);
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
+  const [selectedBookmarks, setSelectedBookmarks] = useState<Set<string>>(new Set());
+  const [isSelectMode, setIsSelectMode] = useState(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [showArchived, setShowArchived] = useState(false);
   const reloadTags = useRef<() => void>(() => {});
+  const statisticsRef = useRef<StatisticsRef>(null);
 
   useEffect(() => {
     loadBookmarks();
-  }, [selectedTag, searchQuery, currentPage]);
+  }, [selectedTag, searchQuery, currentPage, pageSize, showArchived]);
 
   async function loadBookmarks() {
     setIsLoading(true);
@@ -32,10 +47,11 @@ export default function Home() {
         tag: selectedTag,
         search: searchQuery,
         page: currentPage,
-        limit: ITEMS_PER_PAGE,
+        limit: pageSize,
+        archived: showArchived,
       });
       setBookmarks(data.bookmarks);
-      setTotalPages(Math.ceil(data.total / ITEMS_PER_PAGE));
+      setTotalPages(Math.ceil(data.total / pageSize));
     } catch (error) {
       console.error('Failed to load bookmarks:', error);
     }
@@ -58,6 +74,7 @@ export default function Home() {
         )
       );
       reloadTags.current();
+      statisticsRef.current?.refresh();
     } catch (error) {
       console.error('Failed to update tags:', error);
     }
@@ -72,6 +89,67 @@ export default function Home() {
     setCurrentPage(1);
   }
 
+  async function handleDeleteBookmark(id: string) {
+    try {
+      await api.deleteBookmark(id);
+      setBookmarks(currentBookmarks => 
+        currentBookmarks.filter(bookmark => bookmark.id !== id)
+      );
+    } catch (error) {
+      console.error('Failed to delete bookmark:', error);
+    }
+  }
+
+  function toggleSelectMode() {
+    setIsSelectMode(!isSelectMode);
+    setSelectedBookmarks(new Set());
+  }
+
+  function handleToggleSelect(id: string) {
+    setSelectedBookmarks(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(id)) {
+        newSet.delete(id);
+      } else {
+        newSet.add(id);
+      }
+      return newSet;
+    });
+  }
+
+  async function handleDeleteSelected() {
+    try {
+      const deletePromises = Array.from(selectedBookmarks).map(id => 
+        api.deleteBookmark(id)
+      );
+      await Promise.all(deletePromises);
+      
+      setBookmarks(currentBookmarks => 
+        currentBookmarks.filter(bookmark => !selectedBookmarks.has(bookmark.id))
+      );
+      setSelectedBookmarks(new Set());
+      setIsSelectMode(false);
+      setIsDeleteModalOpen(false);
+    } catch (error) {
+      console.error('Failed to delete bookmarks:', error);
+    }
+  }
+
+  function handlePageSizeChange(newSize: number) {
+    setPageSize(newSize);
+    setCurrentPage(1);
+  }
+
+  async function handleArchiveBookmark(id: string) {
+    try {
+      await api.toggleArchiveBookmark(id);
+      loadBookmarks();
+      statisticsRef.current?.refresh();
+    } catch (error) {
+      console.error('Failed to archive bookmark:', error);
+    }
+  }
+
   const filteredBookmarks = bookmarks.filter(bookmark => 
     bookmark.full_text.toLowerCase().includes(searchQuery.toLowerCase()) ||
     bookmark.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -82,9 +160,27 @@ export default function Home() {
     <main className="px-4 py-8">
       <div className="mb-8 flex items-center justify-between max-w-[2000px] mx-auto">
         <h1 className="text-3xl font-bold">TweetVault</h1>
-        <Button onClick={() => setIsUploadModalOpen(true)}>
-          Upload Bookmarks
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button 
+            variant="outline"
+            onClick={() => setShowArchived(!showArchived)}
+          >
+            {showArchived ? 'Show Active' : 'Show Archived'}
+          </Button>
+          <Button 
+            variant="outline"
+            onClick={toggleSelectMode}
+          >
+            {isSelectMode ? 'Cancel Selection' : 'Select Bookmarks'}
+          </Button>
+          <Button onClick={() => setIsUploadModalOpen(true)}>
+            Upload Bookmarks
+          </Button>
+        </div>
+      </div>
+
+      <div className="max-w-[2000px] mx-auto mb-8">
+        <Statistics ref={statisticsRef} />
       </div>
 
       <div className="max-w-[2000px] mx-auto">
@@ -115,6 +211,12 @@ export default function Home() {
                 <BookmarkCard
                   bookmark={bookmark}
                   onUpdateTags={handleUpdateTags}
+                  onDelete={handleDeleteBookmark}
+                  onArchive={handleArchiveBookmark}
+                  isArchived={bookmark.archived}
+                  isSelectable={isSelectMode}
+                  isSelected={selectedBookmarks.has(bookmark.id)}
+                  onToggleSelect={handleToggleSelect}
                 />
               </div>
             ))}
@@ -131,6 +233,8 @@ export default function Home() {
               currentPage={currentPage}
               totalPages={totalPages}
               onPageChange={setCurrentPage}
+              pageSize={pageSize}
+              onPageSizeChange={handlePageSizeChange}
             />
           )}
         </>
@@ -144,6 +248,39 @@ export default function Home() {
           loadBookmarks();
         }}
       />
+
+      {isSelectMode && selectedBookmarks.size > 0 && (
+        <SelectionToolbar
+          selectedCount={selectedBookmarks.size}
+          onClearSelection={() => setSelectedBookmarks(new Set())}
+          onDeleteSelected={() => setIsDeleteModalOpen(true)}
+        />
+      )}
+
+      {isDeleteModalOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[100]">
+          <div className="bg-white p-6 rounded-lg max-w-md w-full mx-4">
+            <h3 className="text-lg font-semibold mb-2">Delete Bookmarks</h3>
+            <p className="mb-4">
+              Are you sure you want to delete {selectedBookmarks.size} selected bookmark{selectedBookmarks.size !== 1 ? 's' : ''}?
+            </p>
+            <div className="flex justify-end gap-2">
+              <button
+                className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded"
+                onClick={() => setIsDeleteModalOpen(false)}
+              >
+                Cancel
+              </button>
+              <button
+                className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
+                onClick={handleDeleteSelected}
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </main>
   );
 }

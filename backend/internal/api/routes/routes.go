@@ -57,9 +57,16 @@ func SetupRouter(db *gorm.DB) *gin.Engine {
 		api.GET("/bookmarks/:id", bookmarkHandler.Get)
 		api.PUT("/bookmarks/:id", bookmarkHandler.Update)
 		api.DELETE("/bookmarks/:id", bookmarkHandler.Delete)
+		api.POST("/bookmarks/:id/toggle-archive", bookmarkHandler.ToggleArchive)
 
 		// Tag endpoints
 		api.GET("/tags", tagHandler.List)
+		api.PUT("/tags/:id", tagHandler.Update)
+		api.DELETE("/tags/:id", tagHandler.Delete)
+		api.GET("/tags/:id/count", tagHandler.GetBookmarkCount)
+
+		// Statistics endpoint
+		api.GET("/statistics", bookmarkHandler.GetStatistics)
 	}
 
 	return r

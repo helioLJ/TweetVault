@@ -14,6 +14,7 @@ export interface Bookmark {
     url: string;
     media: Media[];
     tags: Tag[];
+    archived: boolean;
   }
   
   export interface Media {

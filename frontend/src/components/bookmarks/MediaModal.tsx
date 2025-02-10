@@ -68,6 +68,7 @@ export function MediaModal({ media, onClose }: MediaModalProps) {
                 width: 'auto',
                 objectFit: 'contain'
               }}
+              priority
             />
           ) : (
             <video

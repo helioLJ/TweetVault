@@ -230,13 +230,14 @@ export function BookmarkCard({
                   })}
                 >
                   <Image
-                    src={media.thumbnail}
+                    src={media.thumbnail.replace('name=thumb', 'name=medium')}
                     alt=""
                     fill
                     quality={100}
                     sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                     className="object-cover hover:opacity-90 transition-opacity"
                     priority
+                    unoptimized
                   />
                 </div>
               ))}

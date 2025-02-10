@@ -69,6 +69,8 @@ export function MediaModal({ media, onClose }: MediaModalProps) {
                 objectFit: 'contain'
               }}
               priority
+              quality={100}
+              sizes="90vw"
             />
           ) : (
             <video

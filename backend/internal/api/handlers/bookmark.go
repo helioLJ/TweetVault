@@ -94,6 +94,12 @@ func (h *BookmarkHandler) GetStatistics(c *gin.Context) {
 		} `json:"top_tags"`
 	}
 
+	// Initialize TopTags as empty slice instead of nil
+	stats.TopTags = []struct {
+		Name  string `json:"name"`
+		Count int64  `json:"count"`
+	}{}
+
 	// Get total bookmarks
 	h.db.Model(&models.Bookmark{}).Count(&stats.TotalBookmarks)
 

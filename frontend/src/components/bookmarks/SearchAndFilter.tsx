@@ -17,6 +17,8 @@ export const SearchAndFilter = forwardRef<SearchAndFilterRef, SearchAndFilterPro
   ({ onSearch, onTagSelect, selectedTag }, ref) => {
     const [tags, setTags] = useState<Tag[]>([]);
     const [searchQuery, setSearchQuery] = useState('');
+    const [newTagInput, setNewTagInput] = useState('');
+    const [suggestedTags, setSuggestedTags] = useState<Tag[]>([]);
 
     useImperativeHandle(ref, () => ({
       loadTags
@@ -39,6 +41,24 @@ export const SearchAndFilter = forwardRef<SearchAndFilterRef, SearchAndFilterPro
       const value = e.target.value;
       setSearchQuery(value);
       onSearch(value);
+    };
+
+    const updateSuggestedTags = (input: string) => {
+      if (!input.trim()) {
+        setSuggestedTags([]);
+        return;
+      }
+      
+      const filtered = tags.filter(tag => 
+        tag.name.toLowerCase().includes(input.toLowerCase())
+      );
+      setSuggestedTags(filtered);
+    };
+
+    const handleAddTag = (tagName: string) => {
+      onTagSelect(tagName);
+      setNewTagInput('');
+      setSuggestedTags([]);
     };
 
     return (
@@ -95,6 +115,20 @@ export const SearchAndFilter = forwardRef<SearchAndFilterRef, SearchAndFilterPro
               </div>
             </div>
           ))}
+          <div className="relative inline-block">
+            <input
+              type="text"
+              placeholder="Add tag..."
+              className="rounded-full px-3 py-1 text-sm whitespace-nowrap bg-gray-100 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              value={newTagInput}
+              onChange={(e) => setNewTagInput(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && newTagInput.trim()) {
+                  handleAddTag(newTagInput.trim());
+                }
+              }}
+            />
+          </div>
         </div>
       </div>
     );

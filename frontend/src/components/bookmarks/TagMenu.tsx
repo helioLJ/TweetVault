@@ -49,6 +49,7 @@ export function TagMenu({ tag, onSuccess, selectedTag }: TagMenuProps) {
   }
 
   const handleDotsClick = (e: React.MouseEvent) => {
+    e.preventDefault();
     e.stopPropagation();
     const button = e.currentTarget as HTMLElement;
     const rect = button.getBoundingClientRect();
@@ -93,7 +94,7 @@ export function TagMenu({ tag, onSuccess, selectedTag }: TagMenuProps) {
   }
 
   return (
-    <span className="inline-flex items-center ml-1">
+    <span className="inline-flex items-center ml-1" onClick={(e) => e.stopPropagation()}>
       <div 
         onClick={handleDotsClick}
         className={`p-1 rounded-full cursor-pointer ${

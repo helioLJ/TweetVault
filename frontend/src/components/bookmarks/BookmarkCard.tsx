@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Bookmark } from '@/types';
+import { useState, useEffect } from 'react';
+import { Bookmark, Tag } from '@/types';
 import Image from 'next/image';
 import { FormattedDate } from './FormattedDate';
 import { MediaModal } from './MediaModal';
@@ -37,6 +37,34 @@ export function BookmarkCard({
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [menuPosition, setMenuPosition] = useState({ top: 0, left: 0 });
+  const [suggestedTags, setSuggestedTags] = useState<Tag[]>([]);
+  const [allTags, setAllTags] = useState<Tag[]>([]);
+
+  useEffect(() => {
+    loadTags();
+  }, []);
+
+  async function loadTags() {
+    try {
+      const tags = await api.getTags();
+      setAllTags(tags);
+    } catch (error) {
+      console.error('Failed to load tags:', error);
+    }
+  }
+
+  const updateSuggestedTags = (input: string) => {
+    if (!input.trim()) {
+      setSuggestedTags([]);
+      return;
+    }
+    
+    const filtered = allTags.filter(tag => 
+      tag.name.toLowerCase().includes(input.toLowerCase()) &&
+      !bookmark.tags.some(t => t.name === tag.name)
+    );
+    setSuggestedTags(filtered);
+  };
 
   function handleAddTag(e: React.KeyboardEvent) {
     if (e.key === 'Enter' && newTag.trim()) {
@@ -93,6 +121,17 @@ export function BookmarkCard({
       left: rect.left + window.scrollX
     });
     setIsMenuOpen(!isMenuOpen);
+  };
+
+  // Add this helper function to highlight matching text
+  const highlightMatch = (text: string, query: string) => {
+    if (!query) return text;
+    const parts = text.split(new RegExp(`(${query})`, 'gi'));
+    return parts.map((part, i) => 
+      part.toLowerCase() === query.toLowerCase() 
+        ? <span key={i} className="bg-yellow-200">{part}</span>
+        : part
+    );
   };
 
   return (
@@ -222,14 +261,37 @@ export function BookmarkCard({
                 </button>
               </span>
             ))}
-            <input
-              type="text"
-              placeholder="Add tag..."
-              className="w-20 rounded-full bg-blue-50 px-2.5 py-1 text-sm text-blue-700 placeholder:text-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-blue-100 border-none h-[26px] overflow-x-auto whitespace-nowrap scrollbar-none"
-              value={newTag}
-              onChange={(e) => setNewTag(e.target.value)}
-              onKeyDown={handleAddTag}
-            />
+            <div className="relative">
+              <input
+                type="text"
+                placeholder="Add tag..."
+                className="w-20 rounded-full bg-blue-50 px-2.5 py-1 text-sm text-blue-700 placeholder:text-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-blue-100 border-none h-[26px] overflow-x-auto whitespace-nowrap scrollbar-none"
+                value={newTag}
+                onChange={(e) => {
+                  setNewTag(e.target.value);
+                  updateSuggestedTags(e.target.value);
+                }}
+                onKeyDown={handleAddTag}
+              />
+              {suggestedTags.length > 0 && (
+                <div className="absolute left-0 top-full mt-1 min-w-[200px] bg-white rounded-lg shadow-lg border z-[100]">
+                  {suggestedTags.map(tag => (
+                    <button
+                      key={tag.id}
+                      className="w-full px-4 py-2 text-left text-sm hover:bg-gray-100"
+                      onClick={() => {
+                        const updatedTags = [...bookmark.tags.map(t => t.name), tag.name];
+                        onUpdateTags(bookmark.id, updatedTags);
+                        setNewTag('');
+                        setSuggestedTags([]);
+                      }}
+                    >
+                      {highlightMatch(tag.name, newTag)}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
 
           <div className="flex items-center gap-4 text-sm text-gray-500 border-t pt-3">

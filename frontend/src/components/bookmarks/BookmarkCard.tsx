@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Bookmark, Tag } from '@/types';
 import Image from 'next/image';
 import { FormattedDate } from './FormattedDate';
@@ -36,9 +36,12 @@ export function BookmarkCard({
   const [isExpanded, setIsExpanded] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
-  const [menuPosition, setMenuPosition] = useState({ top: 0, left: 0 });
+  const [menuPosition, setMenuPosition] = useState({ top: 0, left: 0, transformOrigin: 'top' });
   const [suggestedTags, setSuggestedTags] = useState<Tag[]>([]);
   const [allTags, setAllTags] = useState<Tag[]>([]);
+
+  // Add a ref to the card container
+  const cardRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     loadTags();
@@ -115,10 +118,19 @@ export function BookmarkCard({
   const handleDotsClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     const button = e.currentTarget as HTMLElement;
-    const rect = button.getBoundingClientRect();
+    const buttonRect = button.getBoundingClientRect();
+    const cardRect = cardRef.current?.getBoundingClientRect();
+    
+    if (!cardRect) return;
+    
+    // Calculate position relative to the card
+    const top = buttonRect.bottom - cardRect.top;
+    const left = buttonRect.left - cardRect.left;
+    
     setMenuPosition({
-      top: rect.bottom + window.scrollY,
-      left: rect.left + window.scrollX
+      top: top + 4,
+      left: Math.min(left, cardRect.width),
+      transformOrigin: 'top'
     });
     setIsMenuOpen(!isMenuOpen);
   };
@@ -135,7 +147,10 @@ export function BookmarkCard({
   };
 
   return (
-    <div className="rounded-lg border bg-white p-4 shadow-sm transition-shadow hover:shadow-md h-fit w-full inline-block relative">
+    <div 
+      ref={cardRef}
+      className="rounded-lg border bg-white p-4 shadow-sm transition-shadow hover:shadow-md h-fit w-full inline-block relative"
+    >
       {isSelectable && (
         <div className="absolute top-2 left-2 z-10">
           <input
@@ -319,10 +334,12 @@ export function BookmarkCard({
               onClick={() => setIsMenuOpen(false)}
             />
             <div 
-              className="fixed bg-white rounded-lg shadow-lg border z-[91]"
+              className="absolute bg-white rounded-lg shadow-lg border z-[91]"
               style={{
                 top: `${menuPosition.top}px`,
                 left: `${menuPosition.left}px`,
+                transformOrigin: menuPosition.transformOrigin,
+                minWidth: '160px'
               }}
             >
               <div className="py-1">

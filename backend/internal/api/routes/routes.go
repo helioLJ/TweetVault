@@ -6,31 +6,9 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/helioLJ/tweetvault/internal/api/handlers"
 	"gorm.io/gorm"
-	"github.com/helioLJ/tweetvault/internal/models"
 )
 
 func SetupRouter(db *gorm.DB) *gin.Engine {
-	// Initialize default tags
-	defaultTags := []models.Tag{
-		{Name: "Inspiration"},
-		{Name: "Tech"},
-		{Name: "Programming"},
-		{Name: "Tutorial"},
-		{Name: "Thread"},
-		{Name: "News"},
-		{Name: "Career"},
-		{Name: "Must-Read"},
-		{Name: "Resources"},
-		{Name: "Tools"},
-	}
-
-	for _, tag := range defaultTags {
-		// Create tag only if it doesn't exist
-		if err := db.FirstOrCreate(&tag, models.Tag{Name: tag.Name}).Error; err != nil {
-			log.Printf("Error creating default tag %s: %v", tag.Name, err)
-		}
-	}
-
 	r := gin.New()
 
 	// Add recovery middleware
@@ -83,6 +61,7 @@ func SetupRouter(db *gorm.DB) *gin.Engine {
 
 		// Tag endpoints
 		api.GET("/tags", tagHandler.List)
+		api.POST("/tags", tagHandler.Create)
 		api.PUT("/tags/:id", tagHandler.Update)
 		api.DELETE("/tags/:id", tagHandler.Delete)
 		api.GET("/tags/:id/count", tagHandler.GetBookmarkCount)

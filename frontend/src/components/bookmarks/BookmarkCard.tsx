@@ -56,27 +56,34 @@ export function BookmarkCard({
     }
   }
 
-  const updateSuggestedTags = (input: string) => {
+  const updateSuggestedTags = async (input: string) => {
     if (!input.trim()) {
       setSuggestedTags([]);
       return;
     }
     
+    // Load fresh tags before filtering
+    await loadTags();
+    
+    // Use a case-insensitive search
+    const searchTerm = input.toLowerCase();
     const filtered = allTags.filter(tag => 
-      tag.name.toLowerCase().includes(input.toLowerCase()) &&
-      !bookmark.tags.some(t => t.name === tag.name)
+      tag.name.toLowerCase().includes(searchTerm) &&
+      !bookmark.tags.some(t => t.name.toLowerCase() === tag.name.toLowerCase())
     );
     setSuggestedTags(filtered);
   };
 
-  function handleAddTag(e: React.KeyboardEvent) {
+  const handleAddTag = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && newTag.trim()) {
       e.preventDefault();
       const updatedTags = [...bookmark.tags.map(t => t.name), newTag.trim()];
       onUpdateTags(bookmark.id, updatedTags);
       setNewTag('');
+      setSuggestedTags([]);
+      loadTags(); // Reload tags after adding a new one
     }
-  }
+  };
 
   function handleRemoveTag(tagToRemove: string) {
     const updatedTags = bookmark.tags
@@ -135,14 +142,14 @@ export function BookmarkCard({
     setIsMenuOpen(!isMenuOpen);
   };
 
-  // Add this helper function to highlight matching text
+  // Update the highlightMatch function
   const highlightMatch = (text: string, query: string) => {
     if (!query) return text;
     const parts = text.split(new RegExp(`(${query})`, 'gi'));
     return parts.map((part, i) => 
       part.toLowerCase() === query.toLowerCase() 
-        ? <span key={i} className="bg-yellow-200">{part}</span>
-        : part
+        ? <span key={i} className="bg-blue-100 text-blue-900 font-medium">{part}</span>
+        : <span key={i} className="text-gray-900">{part}</span>
     );
   };
 
@@ -284,8 +291,9 @@ export function BookmarkCard({
                 className="w-20 rounded-full bg-blue-50 dark:bg-blue-900/20 px-2.5 py-1 text-sm text-blue-700 dark:text-blue-300 placeholder:text-blue-400 dark:placeholder:text-blue-400/70 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-blue-100 dark:focus:bg-blue-900/40 border-none h-[26px] overflow-x-auto whitespace-nowrap scrollbar-none"
                 value={newTag}
                 onChange={(e) => {
-                  setNewTag(e.target.value);
-                  updateSuggestedTags(e.target.value);
+                  const value = e.target.value;
+                  setNewTag(value);
+                  updateSuggestedTags(value);
                 }}
                 onKeyDown={handleAddTag}
               />
@@ -300,6 +308,7 @@ export function BookmarkCard({
                         onUpdateTags(bookmark.id, updatedTags);
                         setNewTag('');
                         setSuggestedTags([]);
+                        loadTags(); // Reload tags after adding a new one
                       }}
                     >
                       {highlightMatch(tag.name, newTag)}

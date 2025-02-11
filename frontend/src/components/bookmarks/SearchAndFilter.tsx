@@ -7,6 +7,7 @@ interface SearchAndFilterProps {
   onSearch: (query: string) => void;
   onTagSelect: (tag: string | undefined) => void;
   selectedTag?: string;
+  onDeleteTag?: (tagName: string) => void;
 }
 
 export interface SearchAndFilterRef {
@@ -14,7 +15,7 @@ export interface SearchAndFilterRef {
 }
 
 export const SearchAndFilter = forwardRef<SearchAndFilterRef, SearchAndFilterProps>(
-  ({ onSearch, onTagSelect, selectedTag }, ref) => {
+  ({ onSearch, onTagSelect, selectedTag, onDeleteTag }, ref) => {
     const [tags, setTags] = useState<Tag[]>([]);
     const [searchQuery, setSearchQuery] = useState('');
     const [newTagInput, setNewTagInput] = useState('');
@@ -49,16 +50,46 @@ export const SearchAndFilter = forwardRef<SearchAndFilterRef, SearchAndFilterPro
         return;
       }
       
+      // Use a case-insensitive search
+      const searchTerm = input.toLowerCase();
       const filtered = tags.filter(tag => 
-        tag.name.toLowerCase().includes(input.toLowerCase())
+        tag.name.toLowerCase().includes(searchTerm)
       );
       setSuggestedTags(filtered);
     };
 
-    const handleAddTag = (tagName: string) => {
-      onTagSelect(tagName);
-      setNewTagInput('');
-      setSuggestedTags([]);
+    const handleAddTag = async (tagName: string) => {
+      if (!tagName.trim()) return;
+      
+      try {
+        // First select the tag if it exists
+        if (tags.some(t => t.name.toLowerCase() === tagName.toLowerCase())) {
+          onTagSelect(tagName);
+          setNewTagInput('');
+          setSuggestedTags([]);
+          return;
+        }
+
+        // Create new tag via API without selecting it
+        await api.createTag(tagName);
+        await loadTags(); // Reload tags after creating
+        
+        setNewTagInput('');
+        setSuggestedTags([]);
+      } catch (error) {
+        console.error('Failed to add tag:', error);
+      }
+    };
+
+    const handleDeleteTag = async (tagName: string) => {
+      if (onDeleteTag) {
+        onDeleteTag(tagName);
+      }
+      // If the deleted tag was selected, reset to show all bookmarks
+      if (selectedTag === tagName) {
+        onTagSelect(undefined);
+      }
+      await loadTags();
     };
 
     return (
@@ -111,17 +142,22 @@ export const SearchAndFilter = forwardRef<SearchAndFilterRef, SearchAndFilterPro
                   tag={tag} 
                   onSuccess={loadTags} 
                   selectedTag={selectedTag}
+                  onDeleteTag={handleDeleteTag}
                 />
               </div>
             </div>
           ))}
-          <div className="relative inline-block">
+          <div className="relative">
             <input
               type="text"
               placeholder="Add tag..."
               className="rounded-full px-3 py-1 text-sm whitespace-nowrap bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
               value={newTagInput}
-              onChange={(e) => setNewTagInput(e.target.value)}
+              onChange={(e) => {
+                const value = e.target.value;
+                setNewTagInput(value);
+                updateSuggestedTags(value);
+              }}
               onKeyDown={(e) => {
                 if (e.key === 'Enter' && newTagInput.trim()) {
                   handleAddTag(newTagInput.trim());

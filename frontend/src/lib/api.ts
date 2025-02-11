@@ -98,4 +98,13 @@ export const api = {
     });
     return res.json();
   },
+
+  async createTag(name: string) {
+    const res = await fetch(`${API_BASE_URL}/tags`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name }),
+    });
+    return res.json();
+  },
 };

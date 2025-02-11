@@ -67,12 +67,12 @@ export const SearchAndFilter = forwardRef<SearchAndFilterRef, SearchAndFilterPro
           <input
             type="search"
             placeholder="Search bookmarks..."
-            className="w-full rounded-lg border border-gray-300 px-4 py-2 pl-10"
+            className="w-full rounded-lg border border-gray-300 dark:border-gray-700 px-4 py-2 pl-10 bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder:text-gray-500 dark:placeholder:text-gray-400"
             value={searchQuery}
             onChange={handleSearch}
           />
           <svg
-            className="absolute left-3 top-2.5 h-5 w-5 text-gray-400"
+            className="absolute left-3 top-2.5 h-5 w-5 text-gray-400 dark:text-gray-500"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -91,7 +91,7 @@ export const SearchAndFilter = forwardRef<SearchAndFilterRef, SearchAndFilterPro
             className={`rounded-full px-3 py-1 text-sm whitespace-nowrap ${
               !selectedTag
                 ? 'bg-blue-600 text-white'
-                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600'
             }`}
           >
             All
@@ -103,7 +103,7 @@ export const SearchAndFilter = forwardRef<SearchAndFilterRef, SearchAndFilterPro
                 className={`px-3 py-1 text-sm whitespace-nowrap flex items-center cursor-pointer ${
                   selectedTag === tag.name
                     ? 'bg-blue-600 text-white'
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600'
                 }`}
               >
                 <span>{tag.name}</span>
@@ -119,7 +119,7 @@ export const SearchAndFilter = forwardRef<SearchAndFilterRef, SearchAndFilterPro
             <input
               type="text"
               placeholder="Add tag..."
-              className="rounded-full px-3 py-1 text-sm whitespace-nowrap bg-gray-100 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="rounded-full px-3 py-1 text-sm whitespace-nowrap bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
               value={newTagInput}
               onChange={(e) => setNewTagInput(e.target.value)}
               onKeyDown={(e) => {

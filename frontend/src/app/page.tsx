@@ -11,6 +11,7 @@ import { SearchAndFilter } from '@/components/bookmarks/SearchAndFilter';
 import { SelectionToolbar } from '@/components/bookmarks/SelectionToolbar';
 import { Statistics } from '@/components/bookmarks/Statistics';
 import { StatisticsRef } from '@/components/bookmarks/Statistics';
+import { ThemeToggle } from '@/components/theme/ThemeToggle';
 
 const ITEMS_PER_PAGE = 20;
 
@@ -161,6 +162,7 @@ export default function Home() {
       <div className="mb-8 flex items-center justify-between max-w-[2000px] mx-auto">
         <h1 className="text-3xl font-bold">TweetVault</h1>
         <div className="flex items-center gap-2">
+          <ThemeToggle />
           <Button 
             variant="outline"
             onClick={() => setShowArchived(!showArchived)}

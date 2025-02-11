@@ -37,23 +37,23 @@ export const Statistics = forwardRef<StatisticsRef>((_, ref) => {
 
   if (isLoading) {
     return (
-      <div className="bg-white rounded-lg border p-6">
+      <div className="bg-white dark:bg-gray-800 rounded-lg border dark:border-gray-700 p-6">
         <div className="animate-pulse">
-          <div className="h-6 bg-gray-200 rounded w-1/4 mb-8"></div>
+          <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded w-1/4 mb-8"></div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-              <div className="h-5 bg-gray-200 rounded w-1/3 mb-6"></div>
+              <div className="h-5 bg-gray-200 dark:bg-gray-700 rounded w-1/3 mb-6"></div>
               <div className="space-y-4">
-                <div className="h-4 bg-gray-200 rounded w-full"></div>
-                <div className="h-4 bg-gray-200 rounded w-full"></div>
-                <div className="h-4 bg-gray-200 rounded w-full"></div>
+                <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-full"></div>
+                <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-full"></div>
+                <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-full"></div>
               </div>
             </div>
             <div>
-              <div className="h-5 bg-gray-200 rounded w-1/3 mb-6"></div>
+              <div className="h-5 bg-gray-200 dark:bg-gray-700 rounded w-1/3 mb-6"></div>
               <div className="space-y-4">
                 {[...Array(5)].map((_, i) => (
-                  <div key={i} className="h-4 bg-gray-200 rounded w-full"></div>
+                  <div key={i} className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-full"></div>
                 ))}
               </div>
             </div>
@@ -66,45 +66,45 @@ export const Statistics = forwardRef<StatisticsRef>((_, ref) => {
   if (!stats) return null;
 
   return (
-    <div className="bg-white rounded-lg border p-6">
-      <h2 className="text-xl font-semibold mb-8 text-gray-900">Dashboard Overview</h2>
+    <div className="bg-white dark:bg-gray-800 rounded-lg border dark:border-gray-700 p-6">
+      <h2 className="text-xl font-semibold mb-8 text-gray-900 dark:text-white">Dashboard Overview</h2>
       
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
         <div className="space-y-6">
-          <h3 className="font-medium text-gray-900 text-lg">Summary</h3>
+          <h3 className="font-medium text-gray-900 dark:text-white text-lg">Summary</h3>
           <div className="grid grid-cols-2 gap-4">
-            <div className="bg-blue-50 rounded-lg p-4">
-              <div className="text-blue-600 text-sm font-medium mb-1">Active Bookmarks</div>
-              <div className="text-2xl font-bold text-gray-900">{stats.active_bookmarks}</div>
+            <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4">
+              <div className="text-blue-600 dark:text-blue-400 text-sm font-medium mb-1">Active Bookmarks</div>
+              <div className="text-2xl font-bold text-gray-900 dark:text-white">{stats.active_bookmarks}</div>
             </div>
-            <div className="bg-orange-50 rounded-lg p-4">
-              <div className="text-orange-600 text-sm font-medium mb-1">Archived</div>
-              <div className="text-2xl font-bold text-gray-900">{stats.archived_bookmarks}</div>
+            <div className="bg-orange-50 dark:bg-orange-900/20 rounded-lg p-4">
+              <div className="text-orange-600 dark:text-orange-400 text-sm font-medium mb-1">Archived</div>
+              <div className="text-2xl font-bold text-gray-900 dark:text-white">{stats.archived_bookmarks}</div>
             </div>
-            <div className="bg-green-50 rounded-lg p-4">
-              <div className="text-green-600 text-sm font-medium mb-1">Total Bookmarks</div>
-              <div className="text-2xl font-bold text-gray-900">{stats.total_bookmarks}</div>
+            <div className="bg-green-50 dark:bg-green-900/20 rounded-lg p-4">
+              <div className="text-green-600 dark:text-green-400 text-sm font-medium mb-1">Total Bookmarks</div>
+              <div className="text-2xl font-bold text-gray-900 dark:text-white">{stats.total_bookmarks}</div>
             </div>
-            <div className="bg-purple-50 rounded-lg p-4">
-              <div className="text-purple-600 text-sm font-medium mb-1">Tags</div>
-              <div className="text-2xl font-bold text-gray-900">{stats.total_tags}</div>
+            <div className="bg-purple-50 dark:bg-purple-900/20 rounded-lg p-4">
+              <div className="text-purple-600 dark:text-purple-400 text-sm font-medium mb-1">Tags</div>
+              <div className="text-2xl font-bold text-gray-900 dark:text-white">{stats.total_tags}</div>
             </div>
           </div>
         </div>
 
         <div className="space-y-6">
-          <h3 className="font-medium text-gray-900 text-lg">Popular Tags</h3>
+          <h3 className="font-medium text-gray-900 dark:text-white text-lg">Popular Tags</h3>
           <div className="space-y-3">
             {stats.top_tags.map((tag, index) => (
               <div 
                 key={tag.name} 
-                className="flex items-center justify-between p-3 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors"
+                className="flex items-center justify-between p-3 rounded-lg bg-gray-50 dark:bg-gray-700/50 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
               >
                 <div className="flex items-center gap-3">
-                  <span className="text-gray-500 text-sm">#{index + 1}</span>
-                  <span className="text-gray-900 font-medium">{tag.name}</span>
+                  <span className="text-gray-500 dark:text-gray-400 text-sm">#{index + 1}</span>
+                  <span className="text-gray-900 dark:text-white font-medium">{tag.name}</span>
                 </div>
-                <span className="bg-blue-100 text-blue-800 text-sm font-medium px-2.5 py-0.5 rounded-full">
+                <span className="bg-blue-100 dark:bg-blue-900/50 text-blue-800 dark:text-blue-300 text-sm font-medium px-2.5 py-0.5 rounded-full">
                   {tag.count}
                 </span>
               </div>

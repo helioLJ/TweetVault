@@ -281,7 +281,7 @@ export function BookmarkCard({
               <input
                 type="text"
                 placeholder="Add tag..."
-                className="w-20 rounded-full bg-blue-50 px-2.5 py-1 text-sm text-blue-700 placeholder:text-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-blue-100 border-none h-[26px] overflow-x-auto whitespace-nowrap scrollbar-none"
+                className="w-20 rounded-full bg-blue-50 dark:bg-blue-900/20 px-2.5 py-1 text-sm text-blue-700 dark:text-blue-300 placeholder:text-blue-400 dark:placeholder:text-blue-400/70 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-blue-100 dark:focus:bg-blue-900/40 border-none h-[26px] overflow-x-auto whitespace-nowrap scrollbar-none"
                 value={newTag}
                 onChange={(e) => {
                   setNewTag(e.target.value);
@@ -290,11 +290,11 @@ export function BookmarkCard({
                 onKeyDown={handleAddTag}
               />
               {suggestedTags.length > 0 && (
-                <div className="absolute left-0 top-full mt-1 min-w-[200px] bg-white rounded-lg shadow-lg border z-[100]">
+                <div className="absolute left-0 top-full mt-1 min-w-[200px] bg-white dark:bg-gray-800 rounded-lg shadow-lg border dark:border-gray-700 z-[100]">
                   {suggestedTags.map(tag => (
                     <button
                       key={tag.id}
-                      className="w-full px-4 py-2 text-left text-sm hover:bg-gray-100"
+                      className="w-full px-4 py-2 text-left text-sm text-gray-900 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
                       onClick={() => {
                         const updatedTags = [...bookmark.tags.map(t => t.name), tag.name];
                         onUpdateTags(bookmark.id, updatedTags);

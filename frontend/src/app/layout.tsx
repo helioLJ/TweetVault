@@ -14,8 +14,47 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "TweetVault",
-  description: "Your Twitter Bookmarks Archive",
+  title: {
+    default: "TweetVault - Your Twitter Bookmarks Archive",
+    template: "%s | TweetVault"
+  },
+  description: "Organize and manage your Twitter bookmarks with TweetVault. Search, tag, and archive your favorite tweets.",
+  keywords: ["Twitter", "Bookmarks", "Archive", "Social Media", "Organization"],
+  authors: [{ name: "TweetVault" }],
+  creator: "TweetVault",
+  openGraph: {
+    type: "website",
+    locale: "en_US",
+    url: "https://tweetvault.app",
+    title: "TweetVault - Your Twitter Bookmarks Archive",
+    description: "Organize and manage your Twitter bookmarks with TweetVault. Search, tag, and archive your favorite tweets.",
+    siteName: "TweetVault",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "TweetVault - Your Twitter Bookmarks Archive",
+    description: "Organize and manage your Twitter bookmarks with TweetVault",
+    creator: "@tweetvault",
+  },
+  icons: {
+    icon: [
+      {
+        url: "/favicon.ico",
+        sizes: "any",
+      },
+      {
+        url: "/icon.svg",
+        type: "image/svg+xml",
+      },
+    ],
+    apple: [
+      {
+        url: "/apple-touch-icon.png",
+        sizes: "180x180",
+      },
+    ],
+  },
+  manifest: "/site.webmanifest",
 };
 
 export default function RootLayout({

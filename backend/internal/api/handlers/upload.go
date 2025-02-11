@@ -12,9 +12,12 @@ import (
 
 	"archive/zip"
 
+	"errors"
+
 	"github.com/gin-gonic/gin"
 	"github.com/helioLJ/tweetvault/internal/models"
 	"gorm.io/gorm"
+	"gorm.io/gorm/logger"
 )
 
 type UploadHandler struct {
@@ -155,10 +158,30 @@ func (h *UploadHandler) processBookmark(tx *gorm.DB, tb TwitterBookmark, zipFile
 	// Process media files from ZIP
 	for i, m := range tb.Media {
 		mediaFileName := generateMediaFileName(tb.ScreenName, tb.ID, m.Type, i+1)
+
+		// Check if media already exists - use Session to temporarily disable error logging
+		var existingMedia models.Media
+		err := tx.Session(&gorm.Session{
+			Logger: tx.Logger.LogMode(logger.Silent),
+		}).Where("tweet_id = ? AND file_name = ?", tb.ID, mediaFileName).
+			First(&existingMedia).Error
+		
+		if err == nil {
+			// Media already exists, skip creating a new one
+			continue
+		} else if !errors.Is(err, gorm.ErrRecordNotFound) {
+			// Only return error if it's not a "record not found" error
+			return fmt.Errorf("error checking existing media: %w", err)
+		}
+
+		// Media doesn't exist, proceed with creation
 		mediaData, err := extractFileFromZip(zipFile, mediaFileName)
 		if err != nil {
-			// Log the error but continue processing
-			fmt.Printf("Warning: Could not extract media file %s: %v\n", mediaFileName, err)
+			return fmt.Errorf("failed to extract media file %s: %w", mediaFileName, err)
+		}
+
+		// Skip creating media record if no data was found in ZIP
+		if mediaData == nil {
 			continue
 		}
 
@@ -173,7 +196,7 @@ func (h *UploadHandler) processBookmark(tx *gorm.DB, tb TwitterBookmark, zipFile
 		}
 
 		if err := tx.Create(&media).Error; err != nil {
-			return err
+			return fmt.Errorf("failed to create media record: %w", err)
 		}
 	}
 
@@ -266,14 +289,7 @@ func extractFileFromZip(zipFile *multipart.FileHeader, fileName string) ([]byte,
 	}
 	defer reader.Close()
 
-	// Debug: Print all files in the ZIP
-	fmt.Println("Files in ZIP:")
-	for _, f := range reader.File {
-		fmt.Printf("- %s\n", f.Name)
-	}
-	fmt.Printf("Looking for file: %s\n", fileName)
-
-	// Find and extract the requested file
+	// Remove debug logging and directly search for the file
 	for _, file := range reader.File {
 		if file.Name == fileName {
 			rc, err := file.Open()
@@ -286,5 +302,6 @@ func extractFileFromZip(zipFile *multipart.FileHeader, fileName string) ([]byte,
 		}
 	}
 
-	return nil, fmt.Errorf("file %s not found in zip archive", fileName)
+	// File not found - return nil without error to allow processing to continue
+	return nil, nil
 }

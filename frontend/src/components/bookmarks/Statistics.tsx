@@ -11,7 +11,11 @@ export const Statistics = forwardRef<StatisticsRef>((_, ref) => {
     active_bookmarks: number;
     archived_bookmarks: number;
     total_tags: number;
-    top_tags: Array<{ name: string; count: number }>;
+    top_tags: Array<{ 
+      name: string; 
+      count: number;
+      completed_count: number; 
+    }>;
   } | null>(null);
 
   const [isLoading, setIsLoading] = useState(true);
@@ -69,7 +73,7 @@ export const Statistics = forwardRef<StatisticsRef>((_, ref) => {
     <div className="bg-white dark:bg-gray-800 rounded-lg border dark:border-gray-700 p-6">
       <h2 className="text-xl font-semibold mb-8 text-gray-900 dark:text-white">Dashboard Overview</h2>
       
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
         <div className="space-y-6">
           <h3 className="font-medium text-gray-900 dark:text-white text-lg">Summary</h3>
           <div className="grid grid-cols-2 gap-4">
@@ -93,6 +97,34 @@ export const Statistics = forwardRef<StatisticsRef>((_, ref) => {
         </div>
 
         <div className="space-y-6">
+          <h3 className="font-medium text-gray-900 dark:text-white text-lg">Tasks</h3>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="bg-purple-50 dark:bg-purple-900/20 rounded-lg p-4">
+              <div className="text-purple-600 dark:text-purple-400 text-sm font-medium mb-1">To Read</div>
+              <div className="flex items-baseline gap-2">
+                <div className="text-2xl font-bold text-gray-900 dark:text-white">
+                  {stats.top_tags.find(t => t.name === 'To read')?.count || 0}
+                </div>
+                <div className="text-sm text-gray-500 dark:text-gray-400">
+                  ({stats.top_tags.find(t => t.name === 'To read')?.completed_count || 0} done)
+                </div>
+              </div>
+            </div>
+            <div className="bg-purple-50 dark:bg-purple-900/20 rounded-lg p-4">
+              <div className="text-purple-600 dark:text-purple-400 text-sm font-medium mb-1">To Do</div>
+              <div className="flex items-baseline gap-2">
+                <div className="text-2xl font-bold text-gray-900 dark:text-white">
+                  {stats.top_tags.find(t => t.name === 'To do')?.count || 0}
+                </div>
+                <div className="text-sm text-gray-500 dark:text-gray-400">
+                  ({stats.top_tags.find(t => t.name === 'To do')?.completed_count || 0} done)
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="space-y-6">
           <h3 className="font-medium text-gray-900 dark:text-white text-lg">Popular Tags</h3>
           <div className="space-y-3">
             {stats.top_tags.map((tag, index) => (
@@ -104,9 +136,16 @@ export const Statistics = forwardRef<StatisticsRef>((_, ref) => {
                   <span className="text-gray-500 dark:text-gray-400 text-sm">#{index + 1}</span>
                   <span className="text-gray-900 dark:text-white font-medium">{tag.name}</span>
                 </div>
-                <span className="bg-blue-100 dark:bg-blue-900/50 text-blue-800 dark:text-blue-300 text-sm font-medium px-2.5 py-0.5 rounded-full">
-                  {tag.count}
-                </span>
+                <div className="flex items-center gap-2">
+                  <span className="bg-blue-100 dark:bg-blue-900/50 text-blue-800 dark:text-blue-300 text-sm font-medium px-2.5 py-0.5 rounded-full">
+                    {tag.count}
+                  </span>
+                  {(tag.name === 'To do' || tag.name === 'To read') && (
+                    <span className="text-sm text-gray-500 dark:text-gray-400">
+                      ({tag.completed_count} done)
+                    </span>
+                  )}
+                </div>
               </div>
             ))}
           </div>
@@ -115,3 +154,5 @@ export const Statistics = forwardRef<StatisticsRef>((_, ref) => {
     </div>
   );
 });
+
+Statistics.displayName = 'Statistics';

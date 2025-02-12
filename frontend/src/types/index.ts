@@ -31,4 +31,5 @@ export interface Bookmark {
     id: number;
     name: string;
     created_at: string;
+    completed?: boolean;
   }

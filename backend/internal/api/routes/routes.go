@@ -58,6 +58,7 @@ func SetupRouter(db *gorm.DB) *gin.Engine {
 		api.PUT("/bookmarks/:id", bookmarkHandler.Update)
 		api.DELETE("/bookmarks/:id", bookmarkHandler.Delete)
 		api.POST("/bookmarks/:id/toggle-archive", bookmarkHandler.ToggleArchive)
+		api.POST("/bookmarks/:id/tags/:tagName/toggle-completion", bookmarkHandler.ToggleTagCompletion)
 
 		// Tag endpoints
 		api.GET("/tags", tagHandler.List)

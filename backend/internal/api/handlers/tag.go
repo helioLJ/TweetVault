@@ -12,6 +12,8 @@ type TagHandler struct {
 	db *gorm.DB
 }
 
+var standardTags = []string{"To do", "To read"}
+
 func NewTagHandler(db *gorm.DB) *TagHandler {
 	return &TagHandler{db: db}
 }
@@ -41,6 +43,11 @@ func (h *TagHandler) Update(c *gin.Context) {
 		return
 	}
 
+	if isStandardTag(tag.Name) {
+		c.JSON(http.StatusForbidden, gin.H{"error": "Cannot rename standard tags"})
+		return
+	}
+
 	tag.Name = input.Name
 	if err := h.db.Save(&tag).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
@@ -54,6 +61,11 @@ func (h *TagHandler) Delete(c *gin.Context) {
 	var tag models.Tag
 	if err := h.db.First(&tag, c.Param("id")).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Tag not found"})
+		return
+	}
+
+	if isStandardTag(tag.Name) {
+		c.JSON(http.StatusForbidden, gin.H{"error": "Cannot delete standard tags"})
 		return
 	}
 
@@ -113,4 +125,13 @@ func (h *TagHandler) Create(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusCreated, tag)
+}
+
+func isStandardTag(tagName string) bool {
+	for _, st := range standardTags {
+		if st == tagName {
+			return true
+		}
+	}
+	return false
 }

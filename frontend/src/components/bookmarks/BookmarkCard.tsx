@@ -5,6 +5,7 @@ import { FormattedDate } from './FormattedDate';
 import { MediaModal } from './MediaModal';
 import { linkify } from '@/lib/utils';
 import { api } from '@/lib/api';
+import { v4 as uuidv4 } from 'uuid';
 
 interface BookmarkCardProps {
   bookmark: Bookmark;
@@ -39,13 +40,37 @@ export function BookmarkCard({
   const [menuPosition, setMenuPosition] = useState({ top: 0, left: 0, transformOrigin: 'top' });
   const [suggestedTags, setSuggestedTags] = useState<Tag[]>([]);
   const [allTags, setAllTags] = useState<Tag[]>([]);
+  const [localTags, setLocalTags] = useState(bookmark.tags.map(tag => ({
+    ...tag,
+    uniqueId: uuidv4()
+  })));
 
   // Add a ref to the card container
   const cardRef = useRef<HTMLDivElement>(null);
 
+  const specialTags = ['To do', 'To read'];
+  
   useEffect(() => {
     loadTags();
   }, []);
+
+  useEffect(() => {
+    const shouldUpdate = bookmark.tags.some((tag, index) => {
+      return !localTags[index] || tag.id !== localTags[index].id;
+    });
+
+    if (shouldUpdate) {
+      const updatedTags = bookmark.tags.map(newTag => {
+        const existingTag = localTags.find(t => t.name === newTag.name);
+        return {
+          ...newTag,
+          completed: existingTag?.completed ?? newTag.completed,
+          uniqueId: uuidv4()
+        };
+      });
+      setLocalTags(updatedTags);
+    }
+  }, [bookmark.tags]);
 
   async function loadTags() {
     try {
@@ -86,10 +111,13 @@ export function BookmarkCard({
   };
 
   function handleRemoveTag(tagToRemove: string) {
-    const updatedTags = bookmark.tags
-      .map(t => t.name)
-      .filter(t => t !== tagToRemove);
-    onUpdateTags(bookmark.id, updatedTags);
+    // Update local state immediately
+    const updatedTags = localTags.filter(tag => tag.name !== tagToRemove);
+    setLocalTags(updatedTags);
+
+    // Notify parent component
+    const updatedTagNames = updatedTags.map(t => t.name);
+    onUpdateTags(bookmark.id, updatedTagNames);
   }
 
   // Function to render text with clickable links
@@ -151,6 +179,26 @@ export function BookmarkCard({
         ? <span key={i} className="bg-blue-100 text-blue-900 font-medium">{part}</span>
         : <span key={i} className="text-gray-900">{part}</span>
     );
+  };
+
+  const handleToggleCompletion = async (tagName: string) => {
+    try {
+      const response = await api.toggleTagCompletion(bookmark.id, tagName);
+      
+      const updatedTags = localTags.map(tag => {
+        if (tag.name === tagName) {
+          return { 
+            ...tag, 
+            completed: response.completed 
+          };
+        }
+        return tag;
+      });
+      
+      setLocalTags(updatedTags);
+    } catch (error) {
+      console.error('Failed to toggle completion:', error);
+    }
   };
 
   return (
@@ -269,21 +317,39 @@ export function BookmarkCard({
 
         <div className="space-y-3">
           <div className="flex flex-wrap gap-1.5">
-            {bookmark.tags.map((tag) => (
-              <span
-                key={tag.id}
-                className="group flex items-center gap-1 rounded-full bg-blue-100 px-2.5 py-1 text-sm text-blue-700"
-              >
-                {tag.name}
-                <button
-                  onClick={() => handleRemoveTag(tag.name)}
-                  className="ml-1 hidden rounded-full p-0.5 hover:bg-blue-200 group-hover:block"
-                  aria-label={`Remove ${tag.name} tag`}
+            {localTags.map((tag) => {
+              const isSpecialTag = specialTags.includes(tag.name);
+              return (
+                <span
+                  key={tag.uniqueId}
+                  className={`group flex items-center gap-1 rounded-full px-2.5 py-1 text-sm ${
+                    isSpecialTag 
+                      ? 'bg-purple-100 text-purple-700'
+                      : 'bg-blue-100 text-blue-700'
+                  }`}
                 >
-                  ×
-                </button>
-              </span>
-            ))}
+                  {isSpecialTag && (
+                    <input
+                      type="checkbox"
+                      checked={tag.completed || false}
+                      onChange={(e) => {
+                        e.stopPropagation();
+                        handleToggleCompletion(tag.name);
+                      }}
+                      className="mr-1.5 h-3.5 w-3.5 rounded border-purple-500 text-purple-600 focus:ring-purple-500"
+                    />
+                  )}
+                  {tag.name}
+                  <button
+                    onClick={() => handleRemoveTag(tag.name)}
+                    className="ml-1 hidden rounded-full p-0.5 hover:bg-blue-200 group-hover:block"
+                    aria-label={`Remove ${tag.name} tag`}
+                  >
+                    ×
+                  </button>
+                </span>
+              );
+            })}
             <div className="relative">
               <input
                 type="text"

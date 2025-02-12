@@ -10,6 +10,7 @@ interface Statistics {
   top_tags: Array<{
     name: string;
     count: number;
+    completed_count: number;
   }>;
 }
 
@@ -106,5 +107,13 @@ export const api = {
       body: JSON.stringify({ name }),
     });
     return res.json();
+  },
+
+  async toggleTagCompletion(bookmarkId: string, tagName: string) {
+    const res = await fetch(`${API_BASE_URL}/bookmarks/${bookmarkId}/tags/${tagName}/toggle-completion`, {
+      method: 'POST',
+    });
+    const data = await res.json();
+    return data;
   },
 };

@@ -51,10 +51,11 @@ export default function Home() {
         limit: pageSize,
         archived: showArchived,
       });
-      setBookmarks(data.bookmarks);
+      setBookmarks(data.bookmarks || []);
       setTotalPages(Math.ceil(data.total / pageSize));
     } catch (error) {
       console.error('Failed to load bookmarks:', error);
+      setBookmarks([]);
     }
     setIsLoading(false);
   }
@@ -151,11 +152,13 @@ export default function Home() {
     }
   }
 
-  const filteredBookmarks = bookmarks.filter(bookmark => 
+  const filteredBookmarks = bookmarks?.filter(bookmark => 
     bookmark.full_text.toLowerCase().includes(searchQuery.toLowerCase()) ||
     bookmark.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     bookmark.screen_name.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  )
+  // Sort by date in descending order (newest first)
+  .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()) ?? [];
 
   return (
     <main className="px-4 py-8">

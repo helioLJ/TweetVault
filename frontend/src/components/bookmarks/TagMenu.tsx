@@ -9,6 +9,8 @@ interface TagMenuProps {
   onDeleteTag?: (tagName: string) => void;
 }
 
+const standardTags = ['To do', 'To read'];
+
 export function TagMenu({ tag, onSuccess, selectedTag, onDeleteTag }: TagMenuProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -17,6 +19,8 @@ export function TagMenu({ tag, onSuccess, selectedTag, onDeleteTag }: TagMenuPro
   const [bookmarkCount, setBookmarkCount] = useState<number | null>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
+
+  const isStandardTag = standardTags.includes(tag.name);
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -172,19 +176,45 @@ export function TagMenu({ tag, onSuccess, selectedTag, onDeleteTag }: TagMenuPro
               ) : (
                 <>
                   <button
-                    className="w-full px-4 py-2 text-left text-sm hover:bg-gray-100"
-                    onClick={() => setIsEditing(true)}
+                    className={`w-full px-4 py-2 text-left text-sm ${
+                      isStandardTag 
+                        ? 'text-gray-400 cursor-not-allowed' 
+                        : 'hover:bg-gray-100'
+                    }`}
+                    onClick={() => {
+                      if (!isStandardTag) {
+                        setIsEditing(true);
+                      } else {
+                        // Show tooltip or alert for standard tags
+                        alert('Standard tags cannot be renamed');
+                      }
+                    }}
                   >
                     Rename
+                    {isStandardTag && (
+                      <span className="ml-2 text-xs text-gray-400">(Standard tag)</span>
+                    )}
                   </button>
                   <button
-                    className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-gray-100"
+                    className={`w-full px-4 py-2 text-left text-sm ${
+                      isStandardTag 
+                        ? 'text-gray-400 cursor-not-allowed' 
+                        : 'text-red-600 hover:bg-gray-100'
+                    }`}
                     onClick={() => {
-                      showDeleteConfirmation();
-                      setIsMenuOpen(false);
+                      if (!isStandardTag) {
+                        showDeleteConfirmation();
+                        setIsMenuOpen(false);
+                      } else {
+                        // Show tooltip or alert for standard tags
+                        alert('Standard tags cannot be deleted');
+                      }
                     }}
                   >
                     Delete
+                    {isStandardTag && (
+                      <span className="ml-2 text-xs text-gray-400">(Standard tag)</span>
+                    )}
                   </button>
                 </>
               )}

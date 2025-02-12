@@ -3,6 +3,8 @@ package handlers
 import (
 	"net/http"
 
+	"log"
+
 	"github.com/gin-gonic/gin"
 	"github.com/helioLJ/tweetvault/internal/models"
 	"github.com/helioLJ/tweetvault/internal/services"
@@ -29,8 +31,20 @@ func (h *BookmarkHandler) List(c *gin.Context) {
 	limit := c.DefaultQuery("limit", "12")
 	showArchived := c.DefaultQuery("archived", "false") == "true"
 
+	var bookmarks []models.Bookmark
+	query := h.db.Preload("Media").
+		Preload("Tags", func(db *gorm.DB) *gorm.DB {
+			return db.Select("tags.*, bookmark_tags.completed").
+				Joins("LEFT JOIN bookmark_tags ON bookmark_tags.tag_id = tags.id")
+		})
+
 	bookmarks, total, err := h.service.List(tag, search, page, limit, showArchived)
 	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	if err := query.Find(&bookmarks).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
@@ -43,8 +57,13 @@ func (h *BookmarkHandler) List(c *gin.Context) {
 
 // Get returns a single bookmark by ID
 func (h *BookmarkHandler) Get(c *gin.Context) {
-	bookmark, err := h.service.Get(c.Param("id"))
-	if err != nil {
+	var bookmark models.Bookmark
+	if err := h.db.Preload("Media").
+		Preload("Tags", func(db *gorm.DB) *gorm.DB {
+			return db.Select("tags.*, bookmark_tags.completed").
+				Joins("LEFT JOIN bookmark_tags ON bookmark_tags.tag_id = tags.id")
+		}).
+		First(&bookmark, c.Param("id")).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Bookmark not found"})
 		return
 	}
@@ -81,24 +100,24 @@ func (h *BookmarkHandler) Delete(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "Bookmark deleted successfully"})
 }
 
-// GetStatistics returns overall statistics about bookmarks and tags
+// In the statistics handler
+type TagStats struct {
+	Name           string `json:"name"`
+	Count          int64  `json:"count"`
+	CompletedCount int64  `json:"completed_count"`
+}
+
 func (h *BookmarkHandler) GetStatistics(c *gin.Context) {
 	var stats struct {
-		TotalBookmarks    int64 `json:"total_bookmarks"`
-		ActiveBookmarks   int64 `json:"active_bookmarks"`
-		ArchivedBookmarks int64 `json:"archived_bookmarks"`
-		TotalTags        int64 `json:"total_tags"`
-		TopTags          []struct {
-			Name  string `json:"name"`
-			Count int64  `json:"count"`
-		} `json:"top_tags"`
+		TotalBookmarks    int64      `json:"total_bookmarks"`
+		ActiveBookmarks   int64      `json:"active_bookmarks"`
+		ArchivedBookmarks int64      `json:"archived_bookmarks"`
+		TotalTags         int64      `json:"total_tags"`
+		TopTags           []TagStats `json:"top_tags"`
 	}
 
 	// Initialize TopTags as empty slice instead of nil
-	stats.TopTags = []struct {
-		Name  string `json:"name"`
-		Count int64  `json:"count"`
-	}{}
+	stats.TopTags = []TagStats{}
 
 	// Get total bookmarks
 	h.db.Model(&models.Bookmark{}).Count(&stats.TotalBookmarks)
@@ -112,17 +131,39 @@ func (h *BookmarkHandler) GetStatistics(c *gin.Context) {
 	// Get total tags
 	h.db.Model(&models.Tag{}).Count(&stats.TotalTags)
 
-	// Get top 5 tags with their counts
-	h.db.Raw(`
-		SELECT t.name, COUNT(bt.bookmark_id) as count 
-		FROM tags t 
-		JOIN bookmark_tags bt ON t.id = bt.tag_id 
-		JOIN bookmarks b ON bt.bookmark_id = b.id
-		WHERE b.archived = false
-		GROUP BY t.id, t.name 
-		ORDER BY count DESC 
-		LIMIT 5
-	`).Scan(&stats.TopTags)
+	// Get top tags with completion counts
+	rows, err := h.db.Raw(`
+		WITH tag_counts AS (
+			SELECT 
+				t.id,
+				t.name,
+				COUNT(DISTINCT bt.bookmark_id) as count,
+				COUNT(DISTINCT CASE WHEN bt.completed THEN bt.bookmark_id END) as completed_count
+			FROM tags t
+			LEFT JOIN bookmark_tags bt ON bt.tag_id = t.id
+			GROUP BY t.id, t.name
+			HAVING COUNT(DISTINCT bt.bookmark_id) > 0
+			ORDER BY count DESC
+			LIMIT 5
+		)
+		SELECT name, count, completed_count
+		FROM tag_counts
+	`).Rows()
+
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var tag TagStats
+		if err := rows.Scan(&tag.Name, &tag.Count, &tag.CompletedCount); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+		stats.TopTags = append(stats.TopTags, tag)
+	}
 
 	c.JSON(http.StatusOK, stats)
 }
@@ -133,4 +174,58 @@ func (h *BookmarkHandler) ToggleArchive(c *gin.Context) {
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{"message": "Bookmark archive status toggled successfully"})
+}
+
+// Add this new handler method
+func (h *BookmarkHandler) ToggleTagCompletion(c *gin.Context) {
+	bookmarkID := c.Param("id")
+	tagName := c.Param("tagName")
+
+	log.Printf("ToggleTagCompletion: Starting for bookmarkID=%s, tagName=%s", bookmarkID, tagName)
+
+	// Find the tag
+	var tag models.Tag
+	if err := h.db.Where("name = ?", tagName).First(&tag).Error; err != nil {
+		log.Printf("ToggleTagCompletion: Tag not found: %v", err)
+		c.JSON(http.StatusNotFound, gin.H{"error": "Tag not found"})
+		return
+	}
+	log.Printf("ToggleTagCompletion: Found tag with ID=%d", tag.ID)
+
+	// Find the bookmark_tag entry
+	var bookmarkTag models.BookmarkTag
+	result := h.db.Where("bookmark_id = ? AND tag_id = ?", bookmarkID, tag.ID).
+		First(&bookmarkTag)
+
+	if result.Error != nil {
+		log.Printf("ToggleTagCompletion: Creating new bookmark_tag entry")
+		// If the bookmark_tag doesn't exist, create it
+		bookmarkTag = models.BookmarkTag{
+			BookmarkID: bookmarkID,
+			TagID:      tag.ID,
+			Completed:  true, // Start as completed since we're toggling
+		}
+		if err := h.db.Create(&bookmarkTag).Error; err != nil {
+			log.Printf("ToggleTagCompletion: Error creating bookmark_tag: %v", err)
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+		log.Printf("ToggleTagCompletion: Created new bookmark_tag with completed=true")
+	} else {
+		// Toggle the existing bookmark_tag's completed status
+		newStatus := !bookmarkTag.Completed
+		log.Printf("ToggleTagCompletion: Toggling existing bookmark_tag from %v to %v",
+			bookmarkTag.Completed, newStatus)
+
+		if err := h.db.Model(&bookmarkTag).Update("completed", newStatus).Error; err != nil {
+			log.Printf("ToggleTagCompletion: Error updating bookmark_tag: %v", err)
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+		bookmarkTag.Completed = newStatus
+		log.Printf("ToggleTagCompletion: Updated bookmark_tag completed status")
+	}
+
+	log.Printf("ToggleTagCompletion: Returning completed=%v", bookmarkTag.Completed)
+	c.JSON(http.StatusOK, gin.H{"completed": bookmarkTag.Completed})
 }

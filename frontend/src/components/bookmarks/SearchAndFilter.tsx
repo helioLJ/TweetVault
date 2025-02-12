@@ -147,23 +147,38 @@ export const SearchAndFilter = forwardRef<SearchAndFilterRef, SearchAndFilterPro
               </div>
             </div>
           ))}
-          <div className="relative">
-            <input
-              type="text"
-              placeholder="Add tag..."
-              className="rounded-full px-3 py-1 text-sm whitespace-nowrap bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              value={newTagInput}
-              onChange={(e) => {
-                const value = e.target.value;
-                setNewTagInput(value);
-                updateSuggestedTags(value);
-              }}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' && newTagInput.trim()) {
-                  handleAddTag(newTagInput.trim());
-                }
-              }}
-            />
+          <div className="flex items-center rounded-full overflow-hidden">
+            <div className="px-3 py-1 text-sm whitespace-nowrap flex items-center gap-1 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500">
+              <svg 
+                className="w-3.5 h-3.5 text-gray-500 dark:text-gray-400" 
+                fill="none" 
+                viewBox="0 0 24 24" 
+                stroke="currentColor"
+              >
+                <path 
+                  strokeLinecap="round" 
+                  strokeLinejoin="round" 
+                  strokeWidth={2} 
+                  d="M12 4v16m8-8H4" 
+                />
+              </svg>
+              <input
+                type="text"
+                placeholder="Add tag..."
+                className="bg-transparent text-gray-700 dark:text-gray-200 placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:outline-none w-20"
+                value={newTagInput}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  setNewTagInput(value);
+                  updateSuggestedTags(value);
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && newTagInput.trim()) {
+                    handleAddTag(newTagInput.trim());
+                  }
+                }}
+              />
+            </div>
           </div>
         </div>
       </div>

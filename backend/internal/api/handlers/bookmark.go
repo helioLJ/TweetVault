@@ -29,22 +29,21 @@ func (h *BookmarkHandler) List(c *gin.Context) {
 	search := c.Query("search")
 	page := c.DefaultQuery("page", "1")
 	limit := c.DefaultQuery("limit", "12")
-	showArchived := c.DefaultQuery("archived", "false") == "true"
 
-	var bookmarks []models.Bookmark
-	query := h.db.Preload("Media").
-		Preload("Tags", func(db *gorm.DB) *gorm.DB {
-			return db.Select("tags.*, bookmark_tags.completed").
-				Joins("LEFT JOIN bookmark_tags ON bookmark_tags.tag_id = tags.id")
-		})
+	// Add debug logging
+	archivedParam := c.Query("archived")
+	log.Printf("Received archived parameter: %v", archivedParam)
+
+	// Parse boolean more explicitly
+	showArchived := false
+	if archivedParam == "true" {
+		showArchived = true
+	}
+
+	log.Printf("Parsed showArchived value: %v", showArchived)
 
 	bookmarks, total, err := h.service.List(tag, search, page, limit, showArchived)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
-
-	if err := query.Find(&bookmarks).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}

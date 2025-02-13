@@ -39,11 +39,22 @@ export default function Home() {
 
   useEffect(() => {
     loadBookmarks();
-  }, [selectedTag, searchQuery, currentPage, pageSize, showArchived]);
+  }, [currentPage, selectedTag, searchQuery, showArchived]);
+
+  useEffect(() => {
+    console.log('Current archived state:', showArchived);
+  }, [showArchived]);
 
   async function loadBookmarks() {
     setIsLoading(true);
     try {
+      console.log('Loading bookmarks with params:', {
+        tag: selectedTag,
+        search: searchQuery,
+        page: currentPage,
+        limit: pageSize,
+        archived: showArchived
+      });
       const data = await api.getBookmarks({
         tag: selectedTag,
         search: searchQuery,
@@ -142,23 +153,17 @@ export default function Home() {
     setCurrentPage(1);
   }
 
-  async function handleArchiveBookmark(id: string) {
+  const handleArchive = async (id: string) => {
     try {
       await api.toggleArchiveBookmark(id);
       loadBookmarks();
-      statisticsRef.current?.refresh();
     } catch (error) {
       console.error('Failed to archive bookmark:', error);
     }
-  }
+  };
 
-  const filteredBookmarks = bookmarks?.filter(bookmark => 
-    bookmark.full_text.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    bookmark.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    bookmark.screen_name.toLowerCase().includes(searchQuery.toLowerCase())
-  )
-  // Sort by date in descending order (newest first)
-  .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()) ?? [];
+  const filteredBookmarks = bookmarks
+    .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()) ?? [];
 
   return (
     <main className="px-4 py-8">
@@ -166,12 +171,21 @@ export default function Home() {
         <h1 className="text-3xl font-bold">TweetVault</h1>
         <div className="flex items-center gap-2">
           <ThemeToggle />
-          <Button 
-            variant="outline"
-            onClick={() => setShowArchived(!showArchived)}
-          >
-            {showArchived ? 'Show Active' : 'Show Archived'}
-          </Button>
+          <div className="flex items-center gap-2 mb-4">
+            <button
+              onClick={() => setShowArchived(!showArchived)}
+              className={`px-4 py-2 rounded-lg ${
+                showArchived 
+                  ? 'bg-purple-600 text-white' 
+                  : 'bg-gray-200 text-gray-700'
+              }`}
+            >
+              {showArchived ? 'Show Active' : 'Show Archived'}
+            </button>
+            <span className="text-sm text-gray-500">
+              {showArchived ? '(Showing archived bookmarks)' : '(Showing active bookmarks)'}
+            </span>
+          </div>
           <Button 
             variant="outline"
             onClick={toggleSelectMode}
@@ -217,7 +231,7 @@ export default function Home() {
                   bookmark={bookmark}
                   onUpdateTags={handleUpdateTags}
                   onDelete={handleDeleteBookmark}
-                  onArchive={handleArchiveBookmark}
+                  onArchive={handleArchive}
                   isArchived={bookmark.archived}
                   isSelectable={isSelectMode}
                   isSelected={selectedBookmarks.has(bookmark.id)}

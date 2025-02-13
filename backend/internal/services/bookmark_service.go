@@ -1,9 +1,11 @@
 package services
 
 import (
+	"log"
+	"strconv"
+
 	"github.com/helioLJ/tweetvault/internal/models"
 	"gorm.io/gorm"
-	"strconv"
 )
 
 type BookmarkService struct {
@@ -17,32 +19,79 @@ func NewBookmarkService(db *gorm.DB) *BookmarkService {
 func (s *BookmarkService) List(tag string, search string, page string, limit string, showArchived bool) ([]models.Bookmark, int64, error) {
 	var bookmarks []models.Bookmark
 	var total int64
-	query := s.db.Model(&models.Bookmark{}).Where("archived = ?", showArchived)
 
+	// Start with a new query
+	query := s.db.Model(&models.Bookmark{})
+
+	// Debug logging
+	log.Printf("List Bookmarks - Input parameters:")
+	log.Printf("  showArchived: %v", showArchived)
+	log.Printf("  tag: %v", tag)
+	log.Printf("  search: %v", search)
+	log.Printf("  page: %v", page)
+	log.Printf("  limit: %v", limit)
+
+	// Apply archived filter
+	query = query.Where("archived = ?", showArchived)
+
+	// Apply tag filter if provided
 	if tag != "" {
-		query = query.Joins("JOIN bookmark_tags ON bookmarks.id = bookmark_tags.bookmark_id").
-			Joins("JOIN tags ON bookmark_tags.tag_id = tags.id").
+		query = query.Joins("LEFT JOIN bookmark_tags ON bookmarks.id = bookmark_tags.bookmark_id").
+			Joins("LEFT JOIN tags ON bookmark_tags.tag_id = tags.id").
 			Where("tags.name = ?", tag)
 	}
 
+	// Apply search filter if provided
 	if search != "" {
-		query = query.Where("full_text ILIKE ? OR name ILIKE ? OR screen_name ILIKE ?", 
+		query = query.Where("full_text ILIKE ? OR name ILIKE ? OR screen_name ILIKE ?",
 			"%"+search+"%", "%"+search+"%", "%"+search+"%")
 	}
 
-	query.Count(&total)
+	// Get total count before pagination
+	if err := query.Count(&total).Error; err != nil {
+		log.Printf("Error counting total records: %v", err)
+		return nil, 0, err
+	}
 
 	// Parse pagination params
 	pageNum, _ := strconv.Atoi(page)
 	limitNum, _ := strconv.Atoi(limit)
 	offset := (pageNum - 1) * limitNum
 
-	err := query.Preload("Tags").Preload("Media").
+	// Execute final query with preloads and pagination
+	err := query.Preload("Media").
+		Preload("Tags", func(db *gorm.DB) *gorm.DB {
+			return db.Select("tags.*, bookmark_tags.completed").
+				Joins("LEFT JOIN bookmark_tags ON bookmark_tags.tag_id = tags.id")
+		}).
 		Order("created_at DESC").
-		Offset(offset).Limit(limitNum).
+		Offset(offset).
+		Limit(limitNum).
 		Find(&bookmarks).Error
 
+	if err != nil {
+		log.Printf("Error executing final query: %v", err)
+		return nil, 0, err
+	}
+
+	// Debug output
+	log.Printf("Total matching records: %d", total)
+	log.Printf("Found %d bookmarks in current page", len(bookmarks))
+	if len(bookmarks) > 0 {
+		for i := 0; i < min(3, len(bookmarks)); i++ {
+			log.Printf("Sample bookmark %d - ID: %s, Archived: %v",
+				i+1, bookmarks[i].ID, bookmarks[i].Archived)
+		}
+	}
+
 	return bookmarks, total, err
+}
+
+func min(a, b int) int {
+	if a < b {
+		return a
+	}
+	return b
 }
 
 func (s *BookmarkService) Get(id string) (*models.Bookmark, error) {

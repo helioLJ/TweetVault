@@ -27,7 +27,7 @@ export const api = {
     if (params?.search) searchParams.append('search', params.search);
     if (params?.page) searchParams.append('page', params.page.toString());
     if (params?.limit) searchParams.append('limit', params.limit.toString());
-    if (params?.archived) searchParams.append('archived', params.archived.toString());
+    searchParams.append('archived', (params?.archived ?? false).toString());
 
     const url = `${API_BASE_URL}/bookmarks?${searchParams.toString()}`;
     const res = await fetch(url);

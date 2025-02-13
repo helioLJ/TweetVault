@@ -14,6 +14,25 @@ interface Statistics {
   }>;
 }
 
+const handleApiError = (error: any, endpoint: string) => {
+  console.error(`API Error (${endpoint}):`, error);
+  
+  // Send to monitoring service
+  const errorDetails = {
+    endpoint,
+    message: error.message,
+    timestamp: new Date().toISOString(),
+    stack: error.stack,
+  };
+
+  // Use sendBeacon for non-blocking error reporting
+  if (navigator.sendBeacon) {
+    navigator.sendBeacon('/api/metrics/error', JSON.stringify(errorDetails));
+  }
+
+  throw error;
+};
+
 export const api = {
   async getBookmarks(params?: {
     tag?: string;
@@ -22,16 +41,35 @@ export const api = {
     limit?: number;
     archived?: boolean;
   }) {
-    const searchParams = new URLSearchParams();
-    if (params?.tag) searchParams.append('tag', params.tag);
-    if (params?.search) searchParams.append('search', params.search);
-    if (params?.page) searchParams.append('page', params.page.toString());
-    if (params?.limit) searchParams.append('limit', params.limit.toString());
-    searchParams.append('archived', (params?.archived ?? false).toString());
+    try {
+      const searchParams = new URLSearchParams();
+      if (params?.tag) searchParams.append('tag', params.tag);
+      if (params?.search) searchParams.append('search', params.search);
+      if (params?.page) searchParams.append('page', params.page.toString());
+      if (params?.limit) searchParams.append('limit', params.limit.toString());
+      searchParams.append('archived', (params?.archived ?? false).toString());
 
-    const url = `${API_BASE_URL}/bookmarks?${searchParams.toString()}`;
-    const res = await fetch(url);
-    return res.json();
+      const url = `${API_BASE_URL}/bookmarks?${searchParams.toString()}`;
+      const startTime = performance.now();
+      const res = await fetch(url);
+      const endTime = performance.now();
+
+      // Report API timing
+      if (navigator.sendBeacon) {
+        navigator.sendBeacon('/api/metrics/timing', JSON.stringify({
+          endpoint: 'getBookmarks',
+          duration: endTime - startTime,
+          timestamp: new Date().toISOString(),
+        }));
+      }
+
+      if (!res.ok) {
+        throw new Error(`HTTP error! status: ${res.status}`);
+      }
+      return res.json();
+    } catch (error) {
+      return handleApiError(error, 'getBookmarks');
+    }
   },
 
   async getTags() {

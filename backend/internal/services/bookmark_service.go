@@ -60,10 +60,7 @@ func (s *BookmarkService) List(tag string, search string, page string, limit str
 
 	// Execute final query with preloads and pagination
 	err := query.Preload("Media").
-		Preload("Tags", func(db *gorm.DB) *gorm.DB {
-			return db.Select("tags.*, bookmark_tags.completed").
-				Joins("LEFT JOIN bookmark_tags ON bookmark_tags.tag_id = tags.id")
-		}).
+		Preload("Tags").
 		Order("created_at DESC").
 		Offset(offset).
 		Limit(limitNum).
@@ -74,6 +71,18 @@ func (s *BookmarkService) List(tag string, search string, page string, limit str
 		return nil, 0, err
 	}
 
+	// After loading, set the completed status for each tag
+	for i := range bookmarks {
+		for j := range bookmarks[i].Tags {
+			var bookmarkTag models.BookmarkTag
+			if err := s.db.Where("bookmark_id = ? AND tag_id = ?",
+				bookmarks[i].ID, bookmarks[i].Tags[j].ID).
+				First(&bookmarkTag).Error; err == nil {
+				bookmarks[i].Tags[j].Completed = bookmarkTag.Completed
+			}
+		}
+	}
+
 	// Debug output
 	log.Printf("Total matching records: %d", total)
 	log.Printf("Found %d bookmarks in current page", len(bookmarks))
@@ -81,10 +90,14 @@ func (s *BookmarkService) List(tag string, search string, page string, limit str
 		for i := 0; i < min(3, len(bookmarks)); i++ {
 			log.Printf("Sample bookmark %d - ID: %s, Archived: %v",
 				i+1, bookmarks[i].ID, bookmarks[i].Archived)
+			// Add debug logging for tags and their completion status
+			for _, tag := range bookmarks[i].Tags {
+				log.Printf("  Tag: %s, Completed: %v", tag.Name, tag.Completed)
+			}
 		}
 	}
 
-	return bookmarks, total, err
+	return bookmarks, total, nil
 }
 
 func min(a, b int) int {

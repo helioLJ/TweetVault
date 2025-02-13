@@ -48,6 +48,19 @@ func (h *BookmarkHandler) List(c *gin.Context) {
 		return
 	}
 
+	// Load tags with completion status for each bookmark
+	for i := range bookmarks {
+		if err := h.db.Preload("Media").
+			Preload("Tags", func(db *gorm.DB) *gorm.DB {
+				return db.Select("tags.*, bookmark_tags.completed").
+					Joins("LEFT JOIN bookmark_tags ON bookmark_tags.tag_id = tags.id AND bookmark_tags.bookmark_id = ?", bookmarks[i].ID)
+			}).
+			First(&bookmarks[i], bookmarks[i].ID).Error; err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+	}
+
 	c.JSON(http.StatusOK, gin.H{
 		"bookmarks": bookmarks,
 		"total":     total,
@@ -60,7 +73,7 @@ func (h *BookmarkHandler) Get(c *gin.Context) {
 	if err := h.db.Preload("Media").
 		Preload("Tags", func(db *gorm.DB) *gorm.DB {
 			return db.Select("tags.*, bookmark_tags.completed").
-				Joins("LEFT JOIN bookmark_tags ON bookmark_tags.tag_id = tags.id")
+				Joins("LEFT JOIN bookmark_tags ON bookmark_tags.tag_id = tags.id AND bookmark_tags.bookmark_id = ?", c.Param("id"))
 		}).
 		First(&bookmark, c.Param("id")).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Bookmark not found"})
@@ -140,6 +153,7 @@ func (h *BookmarkHandler) GetStatistics(c *gin.Context) {
 				COUNT(DISTINCT CASE WHEN bt.completed THEN bt.bookmark_id END) as completed_count
 			FROM tags t
 			LEFT JOIN bookmark_tags bt ON bt.tag_id = t.id
+			WHERE t.name NOT IN ('To do', 'To read')
 			GROUP BY t.id, t.name
 			HAVING COUNT(DISTINCT bt.bookmark_id) > 0
 			ORDER BY count DESC

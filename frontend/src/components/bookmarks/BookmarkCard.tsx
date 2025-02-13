@@ -40,10 +40,17 @@ export function BookmarkCard({
   const [menuPosition, setMenuPosition] = useState({ top: 0, left: 0, transformOrigin: 'top' });
   const [suggestedTags, setSuggestedTags] = useState<Tag[]>([]);
   const [allTags, setAllTags] = useState<Tag[]>([]);
-  const [localTags, setLocalTags] = useState(bookmark.tags.map(tag => ({
-    ...tag,
-    uniqueId: uuidv4()
-  })));
+  const [localTags, setLocalTags] = useState(() => {
+    const tags = bookmark.tags.map(tag => {
+      const isCompleted = tag.completed;
+      return {
+        ...tag,
+        uniqueId: uuidv4(),
+        completed: isCompleted
+      };
+    });
+    return tags;
+  });
 
   // Add a ref to the card container
   const cardRef = useRef<HTMLDivElement>(null);
@@ -55,19 +62,17 @@ export function BookmarkCard({
   }, []);
 
   useEffect(() => {
-    const shouldUpdate = bookmark.tags.some((tag, index) => {
-      return !localTags[index] || tag.id !== localTags[index].id;
+    const shouldUpdate = bookmark.tags.some(tag => {
+      const existingTag = localTags.find(t => t.id === tag.id);
+      return !existingTag || existingTag.completed !== tag.completed;
     });
 
     if (shouldUpdate) {
-      const updatedTags = bookmark.tags.map(newTag => {
-        const existingTag = localTags.find(t => t.name === newTag.name);
-        return {
-          ...newTag,
-          completed: existingTag?.completed ?? newTag.completed,
-          uniqueId: uuidv4()
-        };
-      });
+      const updatedTags = bookmark.tags.map(tag => ({
+        ...tag,
+        uniqueId: uuidv4(),
+        completed: tag.completed ?? false
+      }));
       setLocalTags(updatedTags);
     }
   }, [bookmark.tags]);
@@ -185,17 +190,18 @@ export function BookmarkCard({
     try {
       const response = await api.toggleTagCompletion(bookmark.id, tagName);
       
-      const updatedTags = localTags.map(tag => {
-        if (tag.name === tagName) {
-          return { 
-            ...tag, 
-            completed: response.completed 
-          };
-        }
-        return tag;
+      setLocalTags(prevTags => {
+        const newTags = prevTags.map(tag => {
+          if (tag.name === tagName) {
+            return { 
+              ...tag, 
+              completed: response.completed 
+            };
+          }
+          return tag;
+        });
+        return newTags;
       });
-      
-      setLocalTags(updatedTags);
     } catch (error) {
       console.error('Failed to toggle completion:', error);
     }
@@ -331,7 +337,7 @@ export function BookmarkCard({
                   {isSpecialTag && (
                     <input
                       type="checkbox"
-                      checked={tag.completed || false}
+                      checked={tag.completed ?? false}
                       onChange={(e) => {
                         e.stopPropagation();
                         handleToggleCompletion(tag.name);

@@ -5,12 +5,13 @@ import (
 )
 
 type Tag struct {
-	ID        uint       `gorm:"primaryKey" json:"id"`
-	Name      string     `gorm:"type:varchar(50);unique" json:"name"`
-	CreatedAt time.Time  `json:"created_at"`
-	UpdatedAt time.Time  `gorm:"autoUpdateTime" json:"updated_at"`
-	Completed bool       `gorm:"-" json:"completed"`
-	Bookmarks []Bookmark `gorm:"many2many:bookmark_tags" json:"bookmarks,omitempty"`
+	ID           uint          `gorm:"primaryKey" json:"id"`
+	Name         string        `gorm:"type:varchar(50);unique" json:"name"`
+	CreatedAt    time.Time     `json:"created_at"`
+	UpdatedAt    time.Time     `gorm:"autoUpdateTime" json:"updated_at"`
+	Completed    bool          `json:"completed"`
+	Bookmarks    []Bookmark    `gorm:"many2many:bookmark_tags" json:"bookmarks,omitempty"`
+	BookmarkTags []BookmarkTag `gorm:"foreignKey:TagID" json:"-"`
 }
 
 type BookmarkTag struct {

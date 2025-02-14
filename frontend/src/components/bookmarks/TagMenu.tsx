@@ -88,10 +88,10 @@ export function TagMenu({ tag, onSuccess, selectedTag, onDeleteTag }: TagMenuPro
       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[100]" onClick={(e) => e.stopPropagation()}>
         <div className="bg-white p-6 rounded-lg max-w-md w-full mx-4">
           <h3 className="text-lg font-semibold mb-2 text-gray-900">Delete Tag</h3>
-          <p className="mb-4 text-gray-700">
+          <p className="mb-4 text-gray-700 dark:text-gray-300">
             Are you sure you want to delete the tag "{tag.name}"? 
             {bookmarkCount !== null && bookmarkCount > 0 && (
-              <span className="block mt-2 text-gray-600">
+              <span className="block mt-2 text-gray-600 dark:text-gray-400">
                 This tag is used in {bookmarkCount} bookmark{bookmarkCount !== 1 ? 's' : ''}. 
                 The bookmarks won't be deleted.
               </span>

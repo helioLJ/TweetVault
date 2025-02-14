@@ -164,7 +164,25 @@ func (s *BookmarkService) UpdateTags(id string, tags []string) error {
 }
 
 func (s *BookmarkService) Delete(id string) error {
-	return s.db.Delete(&models.Bookmark{}, "id = ?", id).Error
+	// Start a transaction
+	return s.db.Transaction(func(tx *gorm.DB) error {
+		// First delete associated records in bookmark_tags
+		if err := tx.Where("bookmark_id = ?", id).Delete(&models.BookmarkTag{}).Error; err != nil {
+			return err
+		}
+
+		// Then delete associated media
+		if err := tx.Where("tweet_id = ?", id).Delete(&models.Media{}).Error; err != nil {
+			return err
+		}
+
+		// Finally delete the bookmark
+		if err := tx.Delete(&models.Bookmark{}, "id = ?", id).Error; err != nil {
+			return err
+		}
+
+		return nil
+	})
 }
 
 func (s *BookmarkService) ToggleArchive(id string) error {

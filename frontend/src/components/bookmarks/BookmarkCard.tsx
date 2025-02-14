@@ -178,8 +178,8 @@ export function BookmarkCard({
   async function handleDelete() {
     try {
       await api.deleteBookmark(bookmark.id);
-      // You'll need to implement a callback to refresh the bookmark list
-      // onDelete(bookmark.id);
+      onDelete(bookmark.id);
+      setIsDeleteModalOpen(false);
     } catch (error) {
       console.error('Failed to delete bookmark:', error);
     }

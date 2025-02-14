@@ -13,8 +13,6 @@ import { Statistics } from '@/components/bookmarks/Statistics';
 import { StatisticsRef } from '@/components/bookmarks/Statistics';
 import { ThemeToggle } from '@/components/theme/ThemeToggle';
 
-const ITEMS_PER_PAGE = 20;
-
 export default function Home() {
   const [bookmarks, setBookmarks] = useState<Bookmark[]>([]);
   const [selectedTag, setSelectedTag] = useState<string>();

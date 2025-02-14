@@ -40,22 +40,22 @@ interface PaginationProps {
           <button
             onClick={() => onPageChange(currentPage - 1)}
             disabled={currentPage === 1}
-            className="rounded-md border px-3 py-1 text-sm disabled:opacity-50 hover:bg-gray-50"
+            className="rounded-md border dark:border-gray-700 px-3 py-1 text-sm disabled:opacity-50 hover:bg-gray-50 dark:hover:bg-gray-800 dark:text-gray-300 disabled:dark:hover:bg-transparent"
           >
             Previous
           </button>
   
           {pages.map((page, i) => (
             page === -1 ? (
-              <span key={`ellipsis-${i}`} className="px-2">...</span>
+              <span key={`ellipsis-${i}`} className="px-2 dark:text-gray-400">...</span>
             ) : (
               <button
                 key={page}
                 onClick={() => onPageChange(page)}
                 className={`rounded-md px-3 py-1 text-sm ${
                   currentPage === page
-                    ? 'bg-blue-600 text-white'
-                    : 'border hover:bg-gray-50'
+                    ? 'bg-blue-600 text-white dark:bg-blue-500'
+                    : 'border dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 dark:text-gray-300'
                 }`}
               >
                 {page}
@@ -66,18 +66,18 @@ interface PaginationProps {
           <button
             onClick={() => onPageChange(currentPage + 1)}
             disabled={currentPage === totalPages}
-            className="rounded-md border px-3 py-1 text-sm disabled:opacity-50 hover:bg-gray-50"
+            className="rounded-md border dark:border-gray-700 px-3 py-1 text-sm disabled:opacity-50 hover:bg-gray-50 dark:hover:bg-gray-800 dark:text-gray-300 disabled:dark:hover:bg-transparent"
           >
             Next
           </button>
         </div>
   
-        <div className="flex items-center gap-2 text-sm text-gray-600">
+        <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
           <span>Show</span>
           <select
             value={pageSize}
             onChange={handlePageSizeChange}
-            className="rounded border px-2 py-1"
+            className="rounded border dark:border-gray-700 px-2 py-1 dark:bg-gray-800 dark:text-gray-300"
           >
             {PAGE_SIZE_OPTIONS.map(size => (
               <option key={size} value={size}>

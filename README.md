@@ -1,97 +1,140 @@
 # TweetVault
 
-TweetVault is a web application that helps you organize, tag, and categorize your Twitter bookmarks along with their associated media. It provides an intuitive interface for managing your Twitter content collection.
+TweetVault is a full-stack web application designed to help you manage, tag, search, and archive your Twitter bookmarks. With a sleek and responsive interface built using React and Next.js and a powerful backend powered by Go (using Gin and Gorm), TweetVault makes it easy to organize your saved tweets and keep track of your reading or to-do items.
+
+## Demo
+
+### Part 1: Basic Features
+![TweetVault Demo Part 1](./docs/assets/part1.gif)
+
+### Part 2: Advanced Features
+![TweetVault Demo Part 2](./docs/assets/part2.gif)
+
+---
 
 ## Features
 
-- 📤 Upload Twitter bookmarks via JSON file and media ZIP
-- 🏷️ Tag and categorize bookmarks
-- 🔍 Advanced search and filtering capabilities
-- 📱 Media preview and management
-- 🔄 Duplicate detection and handling
-- 📑 "Read Later" and "To Do" organization
+- **Bookmark Management:**  
+  View detailed bookmarks including full text (with clickable links), images, and media.
+  
+- **Tagging System:**  
+  - Create, rename, and delete custom tags.
+  - Includes fixed *standard tags* ("To do", "To read") that cannot be renamed or deleted.
+  - Toggle tag completion status on individual bookmarks.
 
-## Tech Stack
+- **Search and Filter:**  
+  Quickly search through your bookmarks and filter them by tag.
+  
+- **Pagination:**  
+  Adjustable page size and navigation through bookmark pages.
+  
+- **Batch Selection:**  
+  Easily select multiple bookmarks and perform batch operations (e.g., delete, archive).
 
-- **Frontend:** React + Next.js
-- **Backend:** Golang
-- **Database:** PostgreSQL
-- **Styling:** Tailwind CSS
+- **Statistics Dashboard:**  
+  Get a summary of your bookmarks and tag usage including total counts, active and archived bookmarks, and popular tags with completion stats.
 
-## Getting Started
+- **Upload Handling:**  
+  Import Twitter bookmarks from a JSON file (within a ZIP archive) via a simple upload interface.
+
+---
+
+## Architecture Overview
+
+### Frontend
+- **Framework:** Next.js with React and TypeScript  
+- **Components:**  
+  - **BookmarkCard:** Displays individual bookmark details, with options for tagging, archiving, and deletion.
+  - **TagMenu & SearchAndFilter:** Provides an interactive UI for managing and filtering tags.
+  - **Pagination & Button:** Custom UI components for navigation and interaction.
+  - **Statistics:** A dashboard component to display bookmark and tag statistics.
+  
+The frontend is organized within the `frontend/src/components` directory where you'll find subdirectories for bookmarks, UI elements, theme management, and more.
+
+### Backend
+- **Language & Framework:** Written in Go using the Gin framework and Gorm ORM.
+- **Key Modules:**  
+  - **Handlers:** Route handlers for bookmarks, tags, uploads, and statistics (located in `backend/internal/api/handlers`).
+  - **Services:** Business logic encapsulated in services such as `BookmarkService` (located in `backend/internal/services`).
+  - **Database:** Postgres is used as the primary data store. Auto-migrations and initial seed data (e.g., standard tags) are managed on startup.
+  
+The backend's entry point is located at `backend/cmd/server/main.go`, and routes are defined in `backend/internal/api/routes/routes.go`.
+
+---
+
+## Installation
 
 ### Prerequisites
 
-- Node.js (v16+)
-- Go (v1.19+)
-- PostgreSQL (v14+)
-- Docker (optional)
+- **Node.js** (v14 or higher) & **npm** (or yarn) – for frontend dependencies.
+- **Go** (v1.18 or higher) – for backend.
+- **PostgreSQL** – Database server.
 
-### Installation
+### Setup Instructions
 
-1. Clone the repository:
-```bash
-git clone https://github.com/yourusername/tweetvault.git
-cd tweetvault
-```
+1. **Clone the repository:**
 
-2. Set up the backend:
-```bash
-cd backend
-go mod download
-```
+   ```bash
+   git clone https://github.com/yourusername/tweetvault.git
+   cd tweetvault
+   ```
 
-3. Set up the frontend:
-```bash
-cd frontend
-npm install
-```
+2. **Frontend Setup:**
 
-4. Configure your environment variables:
-```bash
-cp backend/.env.example backend/.env
-cp frontend/.env.example frontend/.env.local
-```
+   ```bash
+   cd frontend
+   npm install
+   npm run dev
+   ```
 
-### Development
+   This will start the frontend development server (typically on [http://localhost:3000](http://localhost:3000)).
 
-1. Start the backend server:
-```bash
-cd backend
-go run main.go
-```
+3. **Backend Setup:**
 
-2. Start the frontend development server:
-```bash
-cd frontend
-npm run dev
-```
+   - Set up your database and ensure PostgreSQL is running.
+   - Configure your environment variables. You might create a `.env` file in the backend root with settings such as:
+     
+     ```env
+     DBHost=localhost
+     DBUser=your_db_user
+     DBPassword=your_db_password
+     DBName=tweetvault
+     DBPort=5432
+     ServerPort=8080
+     ```
+     
+   - Install Go dependencies and run the server:
 
-3. Visit `http://localhost:3000` in your browser
+     ```bash
+     cd backend
+     go mod tidy
+     go run cmd/server/main.go
+     ```
 
-## Project Structure
+     The backend server will start (typically on [http://localhost:8080](http://localhost:8080)) and automatically run migrations as well as insert standard tags if missing.
 
-```
-TweetVault/
-├── backend/         # Golang API server
-├── frontend/        # Next.js web application
-├── data/           # Sample data and schemas
-└── docs/           # Documentation
-```
+---
 
-## Contributing
+## API Endpoints
 
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add some amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+The backend API is organized under an `/api` route and provides endpoints for core functionalities:
 
-## License
+- **Bookmarks:**
+  - `GET /api/bookmarks` – List bookmarks with optional filtering by tag or search query.
+  - `GET /api/bookmarks/:id` – Retrieve details of a single bookmark.
+  - `PUT /api/bookmarks/:id` – Update bookmark details and tags.
+  - `DELETE /api/bookmarks/:id` – Delete a bookmark.
+  - `POST /api/bookmarks/:id/toggle-archive` – Archive/unarchive a bookmark.
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+- **Tags:**
+  - `GET /api/tags` – Retrieve all tags.
+  - `POST /api/tags` – Create a new tag.
+  - `PUT /api/tags/:id` – Update a tag.
+  - `DELETE /api/tags/:id` – Delete a tag (except standard tags).
+  - `GET /api/tags/:id/count` – Get the count of bookmarks using a specific tag.
 
-## Acknowledgments
+- **Statistics:**
+  - `GET /api/statistics` – Retrieve summary statistics for bookmarks and tags.
 
-- Built with ❤️ for Twitter power users
-- Inspired by the need for better bookmark organization
+- **Uploads:**
+  - `POST /api/upload` – Process and import Twitter bookmark data from a ZIP file.

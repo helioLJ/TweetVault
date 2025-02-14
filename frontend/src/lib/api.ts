@@ -25,11 +25,6 @@ const handleApiError = (error: any, endpoint: string) => {
     stack: error.stack,
   };
 
-  // Use sendBeacon for non-blocking error reporting
-  if (navigator.sendBeacon) {
-    navigator.sendBeacon('/api/metrics/error', JSON.stringify(errorDetails));
-  }
-
   throw error;
 };
 
@@ -50,18 +45,7 @@ export const api = {
       searchParams.append('archived', (params?.archived ?? false).toString());
 
       const url = `${API_BASE_URL}/bookmarks?${searchParams.toString()}`;
-      const startTime = performance.now();
       const res = await fetch(url);
-      const endTime = performance.now();
-
-      // Report API timing
-      if (navigator.sendBeacon) {
-        navigator.sendBeacon('/api/metrics/timing', JSON.stringify({
-          endpoint: 'getBookmarks',
-          duration: endTime - startTime,
-          timestamp: new Date().toISOString(),
-        }));
-      }
 
       if (!res.ok) {
         throw new Error(`HTTP error! status: ${res.status}`);

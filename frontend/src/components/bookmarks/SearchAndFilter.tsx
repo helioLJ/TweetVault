@@ -147,8 +147,8 @@ export const SearchAndFilter = forwardRef<SearchAndFilterRef, SearchAndFilterPro
               </div>
             </div>
           ))}
-          <div className="flex items-center rounded-full overflow-hidden">
-            <div className="px-3 py-1 text-sm whitespace-nowrap flex items-center gap-1 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500">
+          <div className="flex items-center">
+            <div className="px-3 py-1 text-sm whitespace-nowrap flex items-center gap-1 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500 rounded-full">
               <svg 
                 className="w-3.5 h-3.5 text-gray-500 dark:text-gray-400" 
                 fill="none" 
@@ -162,9 +162,9 @@ export const SearchAndFilter = forwardRef<SearchAndFilterRef, SearchAndFilterPro
                   d="M12 4v16m8-8H4" 
                 />
               </svg>
-              <input
+              <input  
                 type="text"
-                placeholder="Add tag..."
+                placeholder="Create tag..."
                 className="bg-transparent text-gray-700 dark:text-gray-200 placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:outline-none w-20"
                 value={newTagInput}
                 onChange={(e) => {

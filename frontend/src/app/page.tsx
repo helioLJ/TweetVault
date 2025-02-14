@@ -12,7 +12,6 @@ import { SelectionToolbar } from '@/components/bookmarks/SelectionToolbar';
 import { Statistics } from '@/components/bookmarks/Statistics';
 import { StatisticsRef } from '@/components/bookmarks/Statistics';
 import { ThemeToggle } from '@/components/theme/ThemeToggle';
-import { usePageMetrics } from '@/hooks/usePageMetrics';
 
 const ITEMS_PER_PAGE = 20;
 
@@ -38,8 +37,6 @@ export default function Home() {
   const reloadTags = useRef<() => void>(() => {});
   const statisticsRef = useRef<StatisticsRef>(null);
 
-  usePageMetrics('home');
-
   useEffect(() => {
     loadBookmarks();
   }, [currentPage, selectedTag, searchQuery, showArchived]);
@@ -51,7 +48,6 @@ export default function Home() {
   async function loadBookmarks() {
     setIsLoading(true);
     try {
-      const startTime = performance.now();
       const data = await api.getBookmarks({
         tag: selectedTag,
         search: searchQuery,
@@ -59,16 +55,6 @@ export default function Home() {
         limit: pageSize,
         archived: showArchived,
       });
-      const endTime = performance.now();
-
-      // Report loading performance
-      if (navigator.sendBeacon) {
-        navigator.sendBeacon('/api/metrics/bookmark-load', JSON.stringify({
-          duration: endTime - startTime,
-          count: data.bookmarks?.length || 0,
-          timestamp: new Date().toISOString(),
-        }));
-      }
 
       setBookmarks(data.bookmarks || []);
       setTotalPages(Math.ceil(data.total / pageSize));

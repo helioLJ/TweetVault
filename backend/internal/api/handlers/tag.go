@@ -24,6 +24,7 @@ func (h *TagHandler) List(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
+
 	c.JSON(http.StatusOK, tags)
 }
 
@@ -92,6 +93,10 @@ func (h *TagHandler) Delete(c *gin.Context) {
 		return
 	}
 
+	// Update tag count after successful deletion
+	var totalTags int64
+	h.db.Model(&models.Tag{}).Count(&totalTags)
+
 	c.JSON(http.StatusOK, gin.H{"message": "Tag deleted successfully"})
 }
 
@@ -123,6 +128,10 @@ func (h *TagHandler) Create(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
+
+	// Update tag count after successful creation
+	var totalTags int64
+	h.db.Model(&models.Tag{}).Count(&totalTags)
 
 	c.JSON(http.StatusCreated, tag)
 }

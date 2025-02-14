@@ -5,8 +5,6 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/helioLJ/tweetvault/internal/api/handlers"
-	"github.com/helioLJ/tweetvault/internal/api/middleware"
-	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"gorm.io/gorm"
 )
 
@@ -43,12 +41,6 @@ func SetupRouter(db *gorm.DB) *gin.Engine {
 		c.Next()
 	})
 
-	// Add metrics middleware to all routes
-	r.Use(middleware.MetricsMiddleware)
-
-	// Add Prometheus metrics endpoint
-	r.GET("/metrics", gin.WrapH(promhttp.Handler()))
-
 	// Create handler instances
 	uploadHandler := handlers.NewUploadHandler(db)
 	bookmarkHandler := handlers.NewBookmarkHandler(db)
@@ -77,14 +69,6 @@ func SetupRouter(db *gorm.DB) *gin.Engine {
 
 		// Statistics endpoint
 		api.GET("/statistics", bookmarkHandler.GetStatistics)
-
-		// Metrics endpoints
-		api.POST("/metrics/error", handlers.HandleErrorMetric)
-		api.POST("/metrics/timing", handlers.HandleTimingMetric)
-		api.POST("/metrics/pageview", handlers.HandlePageViewMetric)
-		api.POST("/metrics/performance", handlers.HandlePerformanceMetric)
-		api.POST("/metrics/vitals", handlers.HandleWebVitalsMetric)
-		api.POST("/metrics/bookmark-load", handlers.HandleBookmarkLoadMetric)
 	}
 
 	return r

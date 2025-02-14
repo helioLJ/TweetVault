@@ -11,29 +11,5 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
 
-  prometheus:
-    image: prom/prometheus:latest
-    volumes:
-      - ./prometheus:/etc/prometheus
-    ports:
-      - "9090:9090"
-    command:
-      - '--config.file=/etc/prometheus/prometheus.yml'
-
-  grafana:
-    image: grafana/grafana:latest
-    ports:
-      - "3001:3000"
-    volumes:
-      - grafana-storage:/var/lib/grafana
-    environment:
-      - GF_SECURITY_ADMIN_USER=admin
-      - GF_SECURITY_ADMIN_PASSWORD=your_secure_password
-      - GF_USERS_ALLOW_SIGN_UP=false
-      - GF_SERVER_ROOT_URL=http://localhost:3001
-    depends_on:
-      - prometheus
-
 volumes:
   postgres_data:
-  grafana-storage:

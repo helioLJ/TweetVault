@@ -127,27 +127,24 @@ export const Statistics = forwardRef<StatisticsRef>((_, ref) => {
         <div className="space-y-6">
           <h3 className="font-medium text-gray-900 dark:text-white text-lg">Popular Tags</h3>
           <div className="space-y-3">
-            {stats.top_tags.map((tag, index) => (
-              <div 
-                key={tag.name} 
-                className="flex items-center justify-between p-3 rounded-lg bg-gray-50 dark:bg-gray-700/50 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-              >
-                <div className="flex items-center gap-3">
-                  <span className="text-gray-500 dark:text-gray-400 text-sm">#{index + 1}</span>
-                  <span className="text-gray-900 dark:text-white font-medium">{tag.name}</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="bg-blue-100 dark:bg-blue-900/50 text-blue-800 dark:text-blue-300 text-sm font-medium px-2.5 py-0.5 rounded-full">
-                    {tag.count}
-                  </span>
-                  {(tag.name === 'To do' || tag.name === 'To read') && (
-                    <span className="text-sm text-gray-500 dark:text-gray-400">
-                      ({tag.completed_count} done)
+            {stats.top_tags
+              .filter(tag => tag.name !== 'To do' && tag.name !== 'To read')
+              .map((tag, index) => (
+                <div 
+                  key={tag.name} 
+                  className="flex items-center justify-between p-3 rounded-lg bg-gray-50 dark:bg-gray-700/50 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                >
+                  <div className="flex items-center gap-3">
+                    <span className="text-gray-500 dark:text-gray-400 text-sm">#{index + 1}</span>
+                    <span className="text-gray-900 dark:text-white font-medium">{tag.name}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="bg-blue-100 dark:bg-blue-900/50 text-blue-800 dark:text-blue-300 text-sm font-medium px-2.5 py-0.5 rounded-full">
+                      {tag.count}
                     </span>
-                  )}
+                  </div>
                 </div>
-              </div>
-            ))}
+              ))}
           </div>
         </div>
       </div>

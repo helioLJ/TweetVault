@@ -143,24 +143,56 @@ func (h *BookmarkHandler) GetStatistics(c *gin.Context) {
 	// Get total tags
 	h.db.Model(&models.Tag{}).Count(&stats.TotalTags)
 
-	// Get top tags with completion counts
+	// First get special tags (To do and To read)
+	specialRows, err := h.db.Raw(`
+		SELECT 
+			t.name,
+			COUNT(DISTINCT bt.bookmark_id) as count,
+			COUNT(DISTINCT CASE WHEN bt.completed THEN bt.bookmark_id END) as completed_count
+		FROM tags t
+		LEFT JOIN bookmark_tags bt ON bt.tag_id = t.id
+		WHERE t.name IN ('To do', 'To read')
+		GROUP BY t.id, t.name
+	`).Rows()
+
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	defer specialRows.Close()
+
+	// Create a map to store special tags
+	specialTags := make(map[string]TagStats)
+	for specialRows.Next() {
+		var tag TagStats
+		if err := specialRows.Scan(&tag.Name, &tag.Count, &tag.CompletedCount); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+		specialTags[tag.Name] = tag
+	}
+
+	// Add special tags first
+	if todoTag, exists := specialTags["To do"]; exists {
+		stats.TopTags = append(stats.TopTags, todoTag)
+	}
+	if toReadTag, exists := specialTags["To read"]; exists {
+		stats.TopTags = append(stats.TopTags, toReadTag)
+	}
+
+	// Then get top tags (excluding To do and To read)
 	rows, err := h.db.Raw(`
-		WITH tag_counts AS (
-			SELECT 
-				t.id,
-				t.name,
-				COUNT(DISTINCT bt.bookmark_id) as count,
-				COUNT(DISTINCT CASE WHEN bt.completed THEN bt.bookmark_id END) as completed_count
-			FROM tags t
-			LEFT JOIN bookmark_tags bt ON bt.tag_id = t.id
-			WHERE t.name NOT IN ('To do', 'To read')
-			GROUP BY t.id, t.name
-			HAVING COUNT(DISTINCT bt.bookmark_id) > 0
-			ORDER BY count DESC
-			LIMIT 5
-		)
-		SELECT name, count, completed_count
-		FROM tag_counts
+		SELECT 
+			t.name,
+			COUNT(DISTINCT bt.bookmark_id) as count,
+			COUNT(DISTINCT CASE WHEN bt.completed THEN bt.bookmark_id END) as completed_count
+		FROM tags t
+		LEFT JOIN bookmark_tags bt ON bt.tag_id = t.id
+		WHERE t.name NOT IN ('To do', 'To read')
+		GROUP BY t.id, t.name
+		HAVING COUNT(DISTINCT bt.bookmark_id) > 0
+		ORDER BY count DESC
+		LIMIT 5
 	`).Rows()
 
 	if err != nil {
@@ -169,6 +201,7 @@ func (h *BookmarkHandler) GetStatistics(c *gin.Context) {
 	}
 	defer rows.Close()
 
+	// Add regular top tags
 	for rows.Next() {
 		var tag TagStats
 		if err := rows.Scan(&tag.Name, &tag.Count, &tag.CompletedCount); err != nil {

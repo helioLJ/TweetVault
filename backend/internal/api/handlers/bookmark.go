@@ -192,7 +192,7 @@ func (h *BookmarkHandler) GetStatistics(c *gin.Context) {
 		GROUP BY t.id, t.name
 		HAVING COUNT(DISTINCT bt.bookmark_id) > 0
 		ORDER BY count DESC
-		LIMIT 5
+		LIMIT 3
 	`).Rows()
 
 	if err != nil {

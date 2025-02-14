@@ -87,6 +87,23 @@ export default function Home() {
     }
   }
 
+  async function handleDeleteTag(tagName: string) {
+    try {
+      // Update bookmarks state to remove the deleted tag
+      setBookmarks(currentBookmarks => 
+        currentBookmarks.map(bookmark => ({
+          ...bookmark,
+          tags: bookmark.tags.filter(tag => tag.name !== tagName)
+        }))
+      );
+      
+      // Refresh statistics if needed
+      statisticsRef.current?.refresh();
+    } catch (error) {
+      console.error('Failed to handle tag deletion:', error);
+    }
+  }
+
   function handleSearch(query: string) {
     setSearchQuery(query);
   }
@@ -165,7 +182,7 @@ export default function Home() {
         <h1 className="text-3xl font-bold">TweetVault</h1>
         <div className="flex items-center gap-2">
           <ThemeToggle />
-          <div className="flex items-center gap-2 mb-4">
+          <div className="flex items-center gap-2">
             <button
               onClick={() => setShowArchived(!showArchived)}
               className={`px-4 py-2 rounded-lg ${
@@ -176,9 +193,6 @@ export default function Home() {
             >
               {showArchived ? 'Show Active' : 'Show Archived'}
             </button>
-            <span className="text-sm text-gray-500">
-              {showArchived ? '(Showing archived bookmarks)' : '(Showing active bookmarks)'}
-            </span>
           </div>
           <Button 
             variant="outline"
@@ -201,6 +215,7 @@ export default function Home() {
           onSearch={handleSearch}
           onTagSelect={handleTagSelect}
           selectedTag={selectedTag}
+          onDeleteTag={handleDeleteTag}
           ref={(ref: { loadTags: () => void } | null) => {
             if (ref) {
               reloadTags.current = ref.loadTags;

@@ -118,11 +118,30 @@ func (s *BookmarkService) Get(id string) (*models.Bookmark, error) {
 func (s *BookmarkService) UpdateTags(id string, tags []string) error {
 	tx := s.db.Begin()
 
-	if err := tx.Exec("DELETE FROM bookmark_tags WHERE bookmark_id = ?", id).Error; err != nil {
+	// Instead of deleting all tags, get existing ones first
+	var existingBookmarkTags []models.BookmarkTag
+	if err := tx.Where("bookmark_id = ?", id).Find(&existingBookmarkTags).Error; err != nil {
 		tx.Rollback()
 		return err
 	}
 
+	// Create a map of existing tag completion status
+	existingCompletionStatus := make(map[string]bool)
+	for _, bt := range existingBookmarkTags {
+		var tag models.Tag
+		if err := tx.First(&tag, bt.TagID).Error; err != nil {
+			continue
+		}
+		existingCompletionStatus[tag.Name] = bt.Completed
+	}
+
+	// Now delete existing tags
+	if err := tx.Where("bookmark_id = ?", id).Delete(&models.BookmarkTag{}).Error; err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	// Add all tags, preserving completion status for existing ones
 	for _, tagName := range tags {
 		var tag models.Tag
 		if err := tx.FirstOrCreate(&tag, models.Tag{Name: tagName}).Error; err != nil {
@@ -130,9 +149,11 @@ func (s *BookmarkService) UpdateTags(id string, tags []string) error {
 			return err
 		}
 
+		completed := existingCompletionStatus[tagName] // Get existing completion status if any
 		if err := tx.Create(&models.BookmarkTag{
 			BookmarkID: id,
 			TagID:      tag.ID,
+			Completed:  completed,
 		}).Error; err != nil {
 			tx.Rollback()
 			return err

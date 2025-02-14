@@ -3,7 +3,6 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from '@/components/theme/ThemeProvider';
 import ErrorBoundary from '@/components/ErrorBoundary';
-import { initErrorTracking } from '@/lib/monitoring';
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -64,11 +63,6 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  // Initialize error tracking
-  if (typeof window !== 'undefined') {
-    initErrorTracking();
-  }
-
   return (
     <html lang="en" suppressHydrationWarning>
       <body

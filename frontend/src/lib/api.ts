@@ -17,7 +17,6 @@ interface Statistics {
 const handleApiError = (error: any, endpoint: string) => {
   console.error(`API Error (${endpoint}):`, error);
   
-  // Send to monitoring service
   const errorDetails = {
     endpoint,
     message: error.message,

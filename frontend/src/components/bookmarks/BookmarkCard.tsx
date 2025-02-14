@@ -62,12 +62,8 @@ export function BookmarkCard({
   }, []);
 
   useEffect(() => {
-    const shouldUpdate = bookmark.tags.some(tag => {
-      const existingTag = localTags.find(t => t.id === tag.id);
-      return !existingTag || existingTag.completed !== tag.completed;
-    });
-
-    if (shouldUpdate) {
+    // Only update localTags if the number of tags has changed.
+    if (bookmark.tags.length !== localTags.length) {
       const updatedTags = bookmark.tags.map(tag => ({
         ...tag,
         uniqueId: uuidv4(),
@@ -107,12 +103,46 @@ export function BookmarkCard({
   const handleAddTag = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && newTag.trim()) {
       e.preventDefault();
-      const updatedTags = [...bookmark.tags.map(t => t.name), newTag.trim()];
-      onUpdateTags(bookmark.id, updatedTags);
+      
+      const updatedTags = [
+        ...localTags,
+        {
+          id: 0,
+          name: newTag.trim(),
+          completed: false,
+          uniqueId: uuidv4(),
+          created_at: new Date().toISOString()
+        }
+      ];
+      
+      setLocalTags(updatedTags);
+      onUpdateTags(bookmark.id, updatedTags.map(t => t.name));
       setNewTag('');
       setSuggestedTags([]);
-      loadTags(); // Reload tags after adding a new one
+      loadTags();
     }
+  };
+
+  const handleSuggestedTagClick = (tag: Tag) => {
+    // Keep existing local tags with all their properties
+    const updatedTags = [
+      ...localTags,
+      {
+        ...tag,
+        completed: false,
+        uniqueId: uuidv4()
+      }
+    ];
+    
+    // Update local state immediately
+    setLocalTags(updatedTags);
+    
+    // Send only the names to the backend
+    onUpdateTags(bookmark.id, updatedTags.map(t => t.name));
+    
+    setNewTag('');
+    setSuggestedTags([]);
+    loadTags();
   };
 
   function handleRemoveTag(tagToRemove: string) {
@@ -375,13 +405,7 @@ export function BookmarkCard({
                     <button
                       key={tag.id}
                       className="w-full px-4 py-2 text-left text-sm text-gray-900 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
-                      onClick={() => {
-                        const updatedTags = [...bookmark.tags.map(t => t.name), tag.name];
-                        onUpdateTags(bookmark.id, updatedTags);
-                        setNewTag('');
-                        setSuggestedTags([]);
-                        loadTags(); // Reload tags after adding a new one
-                      }}
+                      onClick={() => handleSuggestedTagClick(tag)}
                     >
                       {highlightMatch(tag.name, newTag)}
                     </button>

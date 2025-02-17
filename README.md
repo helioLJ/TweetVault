@@ -4,10 +4,8 @@ TweetVault is a full-stack web application designed to help you manage, tag, sea
 
 ## Demo
 
-### Part 1: Basic Features
 ![TweetVault Demo Part 1](./docs/assets/part1.gif)
 
-### Part 2: Advanced Features
 ![TweetVault Demo Part 2](./docs/assets/part2.gif)
 
 ---
@@ -75,8 +73,8 @@ The backend's entry point is located at `backend/cmd/server/main.go`, and routes
 1. **Clone the repository:**
 
    ```bash
-   git clone https://github.com/yourusername/tweetvault.git
-   cd tweetvault
+   git clone https://github.com/helioLJ/TweetVault.git
+   cd TweetVault
    ```
 
 2. **Frontend Setup:**
@@ -95,12 +93,12 @@ The backend's entry point is located at `backend/cmd/server/main.go`, and routes
    - Configure your environment variables. You might create a `.env` file in the backend root with settings such as:
      
      ```env
-     DBHost=localhost
-     DBUser=your_db_user
-     DBPassword=your_db_password
-     DBName=tweetvault
-     DBPort=5432
-     ServerPort=8080
+     DB_HOST=localhost
+     DB_PORT=5432
+     DB_USER=postgres
+     DB_PASSWORD=postgres
+     DB_NAME=tweetvault
+     SERVER_PORT=8080
      ```
      
    - Install Go dependencies and run the server:
@@ -108,7 +106,7 @@ The backend's entry point is located at `backend/cmd/server/main.go`, and routes
      ```bash
      cd backend
      go mod tidy
-     go run cmd/server/main.go
+     go run cmd/server/main.go # or `air` if you have it installed
      ```
 
      The backend server will start (typically on [http://localhost:8080](http://localhost:8080)) and automatically run migrations as well as insert standard tags if missing.
@@ -138,3 +136,16 @@ The backend API is organized under an `/api` route and provides endpoints for co
 
 - **Uploads:**
   - `POST /api/upload` – Process and import Twitter bookmark data from a ZIP file.
+
+---
+
+## Contributing
+
+We welcome contributions! Please feel free to submit issues and pull requests.
+
+---
+
+## License
+
+This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
+

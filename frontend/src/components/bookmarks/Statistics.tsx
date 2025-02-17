@@ -1,5 +1,6 @@
 import { useState, useEffect, forwardRef, useImperativeHandle } from 'react';
 import { api } from '@/lib/api';
+import { eventBus } from '@/lib/eventBus';
 
 export interface StatisticsRef {
   refresh: () => void;
@@ -34,6 +35,14 @@ export const Statistics = forwardRef<StatisticsRef>((_, ref) => {
   useImperativeHandle(ref, () => ({
     refresh: loadStatistics
   }));
+
+  useEffect(() => {
+    const refreshHandler = () => loadStatistics();
+    eventBus.on("tagUpdated", refreshHandler);
+    return () => {
+      eventBus.off("tagUpdated", refreshHandler);
+    };
+  }, []);
 
   useEffect(() => {
     loadStatistics();

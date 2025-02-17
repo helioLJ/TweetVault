@@ -137,4 +137,9 @@ export const api = {
     const data = await res.json();
     return data;
   },
+
+  async getBookmark(id: string) {
+    const res = await fetch(`${API_BASE_URL}/bookmarks/${id}`);
+    return res.json();
+  },
 };

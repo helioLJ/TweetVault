@@ -6,6 +6,7 @@ import { MediaModal } from './MediaModal';
 import { linkify } from '@/lib/utils';
 import { api } from '@/lib/api';
 import { v4 as uuidv4 } from 'uuid';
+import { eventBus } from '@/lib/eventBus';
 
 interface BookmarkCardProps {
   bookmark: Bookmark;
@@ -62,16 +63,26 @@ export function BookmarkCard({
   }, []);
 
   useEffect(() => {
-    // Only update localTags if the number of tags has changed.
-    if (bookmark.tags.length !== localTags.length) {
-      const updatedTags = bookmark.tags.map(tag => ({
-        ...tag,
-        uniqueId: uuidv4(),
-        completed: tag.completed ?? false
-      }));
-      setLocalTags(updatedTags);
-    }
-  }, [bookmark.tags]);
+    const refreshTags = async () => {
+      try {
+        // Fetch the updated bookmark data
+        const response = await api.getBookmark(bookmark.id);
+        const updatedTags = response.tags.map((tag: Tag) => ({
+          ...tag,
+          uniqueId: uuidv4(),
+          completed: tag.completed ?? false
+        }));
+        setLocalTags(updatedTags);
+      } catch (error) {
+        console.error('Failed to refresh bookmark tags:', error);
+      }
+    };
+
+    eventBus.on("tagUpdated", refreshTags);
+    return () => {
+      eventBus.off("tagUpdated", refreshTags);
+    };
+  }, [bookmark.id]);
 
   async function loadTags() {
     try {
@@ -219,12 +230,11 @@ export function BookmarkCard({
   const handleToggleCompletion = async (tagName: string) => {
     try {
       const response = await api.toggleTagCompletion(bookmark.id, tagName);
-      
       setLocalTags(prevTags => {
         const newTags = prevTags.map(tag => {
           if (tag.name === tagName) {
-            return { 
-              ...tag, 
+            return {
+              ...tag,
               completed: response.completed 
             };
           }
@@ -232,6 +242,7 @@ export function BookmarkCard({
         });
         return newTags;
       });
+      eventBus.emit("tagUpdated", undefined);
     } catch (error) {
       console.error('Failed to toggle completion:', error);
     }

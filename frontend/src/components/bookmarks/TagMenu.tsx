@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { Tag } from '@/types';
 import { api } from '@/lib/api';
+import { eventBus } from '@/lib/eventBus';
 
 interface TagMenuProps {
   tag: Tag;
@@ -48,6 +49,7 @@ export function TagMenu({ tag, onSuccess, selectedTag, onDeleteTag }: TagMenuPro
       setIsEditing(false);
       setIsMenuOpen(false);
       onSuccess();
+      eventBus.emit("tagUpdated", undefined);
     } catch (error) {
       console.error('Failed to update tag:', error);
     }
@@ -62,6 +64,7 @@ export function TagMenu({ tag, onSuccess, selectedTag, onDeleteTag }: TagMenuPro
       setIsDeleting(false);
       setIsMenuOpen(false);
       onSuccess();
+      eventBus.emit("tagUpdated", undefined);
     } catch (error) {
       console.error('Failed to delete tag:', error);
     }

@@ -34,10 +34,12 @@ export default function Home() {
   const [showArchived, setShowArchived] = useState(false);
   const reloadTags = useRef<() => void>(() => {});
   const statisticsRef = useRef<StatisticsRef>(null);
+  const mainRef = useRef<HTMLElement>(null);
+  const scrollPositionRef = useRef<number>(0);
 
   useEffect(() => {
     loadBookmarks();
-  }, [currentPage, selectedTag, searchQuery, showArchived]);
+  }, [currentPage, selectedTag, searchQuery, showArchived, pageSize]);
 
   useEffect(() => {
     console.log('Current archived state:', showArchived);
@@ -45,6 +47,9 @@ export default function Home() {
 
   async function loadBookmarks() {
     setIsLoading(true);
+    // Save current scroll position
+    scrollPositionRef.current = window.scrollY;
+
     try {
       const data = await api.getBookmarks({
         tag: selectedTag,
@@ -56,6 +61,10 @@ export default function Home() {
 
       setBookmarks(data.bookmarks || []);
       setTotalPages(Math.ceil(data.total / pageSize));
+      // Restore scroll position after the bookmarks are loaded from the API
+      if (mainRef.current) {
+        window.scrollTo(0, scrollPositionRef.current);
+      }
     } catch (error) {
       console.error('Failed to load bookmarks:', error);
       setBookmarks([]);
@@ -175,7 +184,7 @@ export default function Home() {
     .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()) ?? [];
 
   return (
-    <main className="px-4 py-8">
+    <main ref={mainRef} className="px-4 py-8">
       <div className="mb-8 flex items-center justify-between max-w-[2000px] mx-auto">
         <h1 className="text-3xl font-bold">TweetVault</h1>
         <div className="flex items-center gap-2">

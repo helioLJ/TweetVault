@@ -33,7 +33,10 @@ TweetVault is a full-stack web application designed to help you manage, tag, sea
   Get a summary of your bookmarks and tag usage including total counts, active and archived bookmarks, and popular tags with completion stats.
 
 - **Upload Handling:**  
-  Import Twitter bookmarks from a JSON file (within a ZIP archive) via a simple upload interface.
+  Import Twitter bookmarks by:
+  1. Using the [Twitter Web Exporter](https://github.com/prinsss/twitter-web-exporter) browser extension to export your bookmarks
+  2. Downloading both the media (.zip file) and data (.json file) from your bookmarks section
+  3. Uploading the exported ZIP archive through TweetVault's simple upload interface
 
 ---
 
@@ -110,6 +113,17 @@ The backend's entry point is located at `backend/cmd/server/main.go`, and routes
      ```
 
      The backend server will start (typically on [http://localhost:8080](http://localhost:8080)) and automatically run migrations as well as insert standard tags if missing.
+
+4. **Exporting Your Twitter Bookmarks:**
+
+   Before you can use TweetVault, you'll need to export your Twitter bookmarks:
+   
+   1. Install the [Twitter Web Exporter](https://github.com/prinsss/twitter-web-exporter) browser extension
+   2. Navigate to your Twitter bookmarks page
+   3. Use the extension to:
+      - Export the bookmark data as JSON
+      - Export the media files as ZIP
+   4. Use TweetVault's upload interface to import the exported ZIP archive
 
 ---
 

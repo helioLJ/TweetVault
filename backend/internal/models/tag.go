@@ -15,8 +15,8 @@ type Tag struct {
 }
 
 type BookmarkTag struct {
-	BookmarkID string    `gorm:"primaryKey;type:varchar(30)" json:"bookmark_id"`
-	TagID      uint      `gorm:"primaryKey" json:"tag_id"`
+	BookmarkID string    `gorm:"primaryKey;type:varchar(30);index:idx_bookmark_id" json:"bookmark_id"`
+	TagID      uint      `gorm:"primaryKey;index:idx_tag_id" json:"tag_id"`
 	CreatedAt  time.Time `json:"created_at"`
-	Completed  bool      `gorm:"default:false" json:"completed"`
+	Completed  bool      `gorm:"default:false;index:idx_completed" json:"completed"`
 }

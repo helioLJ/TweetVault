@@ -29,36 +29,12 @@ func (h *BookmarkHandler) List(c *gin.Context) {
 	search := c.Query("search")
 	page := c.DefaultQuery("page", "1")
 	limit := c.DefaultQuery("limit", "12")
+	showArchived := c.Query("archived") == "true"
 
-	// Add debug logging
-	archivedParam := c.Query("archived")
-	log.Printf("Received archived parameter: %v", archivedParam)
-
-	// Parse boolean more explicitly
-	showArchived := false
-	if archivedParam == "true" {
-		showArchived = true
-	}
-
-	log.Printf("Parsed showArchived value: %v", showArchived)
-
-	bookmarks, total, err := h.service.List(tag, search, page, limit, showArchived)
+	bookmarks, total, err := h.service.ListFromView(tag, search, page, limit, showArchived)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
-	}
-
-	// Load tags with completion status for each bookmark
-	for i := range bookmarks {
-		if err := h.db.Preload("Media").
-			Preload("Tags", func(db *gorm.DB) *gorm.DB {
-				return db.Select("tags.*, bookmark_tags.completed").
-					Joins("LEFT JOIN bookmark_tags ON bookmark_tags.tag_id = tags.id AND bookmark_tags.bookmark_id = ?", bookmarks[i].ID)
-			}).
-			First(&bookmarks[i], bookmarks[i].ID).Error; err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-			return
-		}
 	}
 
 	c.JSON(http.StatusOK, gin.H{
@@ -70,12 +46,20 @@ func (h *BookmarkHandler) List(c *gin.Context) {
 // Get returns a single bookmark by ID
 func (h *BookmarkHandler) Get(c *gin.Context) {
 	var bookmark models.Bookmark
-	if err := h.db.Preload("Media").
-		Preload("Tags", func(db *gorm.DB) *gorm.DB {
-			return db.Select("tags.*, bookmark_tags.completed").
-				Joins("LEFT JOIN bookmark_tags ON bookmark_tags.tag_id = tags.id AND bookmark_tags.bookmark_id = ?", c.Param("id"))
+
+	// Optimized preloading
+	err := h.db.
+		Preload("Media", func(db *gorm.DB) *gorm.DB {
+			return db.Select("id", "tweet_id", "type", "url", "thumbnail", "original") // Exclude heavy fields
 		}).
-		First(&bookmark, c.Param("id")).Error; err != nil {
+		Preload("Tags", func(db *gorm.DB) *gorm.DB {
+			return db.Select("tags.id", "tags.name", "bookmark_tags.completed").
+				Joins("LEFT JOIN bookmark_tags ON tags.id = bookmark_tags.tag_id").
+				Where("bookmark_tags.bookmark_id = ?", c.Param("id"))
+		}).
+		First(&bookmark, c.Param("id")).Error
+
+	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Bookmark not found"})
 		return
 	}

@@ -1,6 +1,8 @@
 package services
 
 import (
+	"encoding/json"
+	"fmt"
 	"log"
 	"strconv"
 
@@ -59,8 +61,12 @@ func (s *BookmarkService) List(tag string, search string, page string, limit str
 	offset := (pageNum - 1) * limitNum
 
 	// Execute final query with preloads and pagination
-	err := query.Preload("Media").
-		Preload("Tags").
+	err := query.
+		Preload("Media").
+		Preload("Tags", func(db *gorm.DB) *gorm.DB {
+			return db.Select("tags.id, tags.name, bookmark_tags.completed").
+				Joins("LEFT JOIN bookmark_tags ON bookmark_tags.tag_id = tags.id")
+		}).
 		Order("created_at DESC").
 		Offset(offset).
 		Limit(limitNum).
@@ -69,18 +75,6 @@ func (s *BookmarkService) List(tag string, search string, page string, limit str
 	if err != nil {
 		log.Printf("Error executing final query: %v", err)
 		return nil, 0, err
-	}
-
-	// After loading, set the completed status for each tag
-	for i := range bookmarks {
-		for j := range bookmarks[i].Tags {
-			var bookmarkTag models.BookmarkTag
-			if err := s.db.Where("bookmark_id = ? AND tag_id = ?",
-				bookmarks[i].ID, bookmarks[i].Tags[j].ID).
-				First(&bookmarkTag).Error; err == nil {
-				bookmarks[i].Tags[j].Completed = bookmarkTag.Completed
-			}
-		}
 	}
 
 	// Debug output
@@ -188,4 +182,68 @@ func (s *BookmarkService) Delete(id string) error {
 func (s *BookmarkService) ToggleArchive(id string) error {
 	return s.db.Model(&models.Bookmark{}).Where("id = ?", id).
 		Update("archived", gorm.Expr("NOT archived")).Error
+}
+
+// RefreshView refreshes the materialized view
+func (s *BookmarkService) RefreshView() error {
+	return s.db.Exec("REFRESH MATERIALIZED VIEW CONCURRENTLY bookmark_views").Error
+}
+
+// ListFromView gets bookmarks from the materialized view
+func (s *BookmarkService) ListFromView(tag string, search string, page string, limit string, showArchived bool) ([]models.BookmarkView, int64, error) {
+	var bookmarks []models.BookmarkView
+	var total int64
+
+	query := s.db.Model(&models.BookmarkView{})
+
+	// Apply archived filter
+	query = query.Where("archived = ?", showArchived)
+
+	// Apply tag filter if provided
+	if tag != "" {
+		query = query.Where("tags_json::jsonb @> ?", fmt.Sprintf(`[{"name":"%s"}]`, tag))
+	}
+
+	// Apply search filter if provided
+	if search != "" {
+		query = query.Where("full_text ILIKE ? OR name ILIKE ? OR screen_name ILIKE ?",
+			"%"+search+"%", "%"+search+"%", "%"+search+"%")
+	}
+
+	// Get total count
+	if err := query.Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
+
+	// Parse pagination params
+	pageNum, _ := strconv.Atoi(page)
+	limitNum, _ := strconv.Atoi(limit)
+	offset := (pageNum - 1) * limitNum
+
+	// Execute final query
+	err := query.
+		Order("created_at DESC").
+		Offset(offset).
+		Limit(limitNum).
+		Find(&bookmarks).Error
+
+	if err != nil {
+		return nil, 0, err
+	}
+
+	// Parse JSON fields into structs
+	for i := range bookmarks {
+		if bookmarks[i].MediaJSON != "" {
+			if err := json.Unmarshal([]byte(bookmarks[i].MediaJSON), &bookmarks[i].Media); err != nil {
+				log.Printf("Error unmarshaling media JSON: %v", err)
+			}
+		}
+		if bookmarks[i].TagsJSON != "" {
+			if err := json.Unmarshal([]byte(bookmarks[i].TagsJSON), &bookmarks[i].Tags); err != nil {
+				log.Printf("Error unmarshaling tags JSON: %v", err)
+			}
+		}
+	}
+
+	return bookmarks, total, nil
 }

@@ -2,10 +2,13 @@ package main
 
 import (
 	"log"
+
 	"github.com/gin-gonic/gin"
+	"github.com/helioLJ/tweetvault/config"
 	"github.com/helioLJ/tweetvault/internal/api/routes"
 	"github.com/helioLJ/tweetvault/internal/database"
-	"github.com/helioLJ/tweetvault/config"
+	"github.com/helioLJ/tweetvault/internal/jobs"
+	"github.com/helioLJ/tweetvault/internal/services"
 )
 
 func main() {
@@ -24,6 +27,9 @@ func main() {
 		log.Fatalf("Failed to connect to database: %v", err)
 	}
 
+	// Create bookmark service
+	bookmarkService := services.NewBookmarkService(db)
+
 	// Initialize router with custom logging
 	r := routes.SetupRouter(db)
 
@@ -35,6 +41,8 @@ func main() {
 		}
 		return ""
 	}))
+
+	jobs.StartViewRefreshJob(bookmarkService)
 
 	// Start server
 	log.Printf("Server starting on port %s", cfg.ServerPort)

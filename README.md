@@ -65,36 +65,88 @@ The backend's entry point is located at `backend/cmd/server/main.go`, and routes
 
 ## Installation
 
-### Prerequisites
+You can run TweetVault either using Docker Compose (recommended) or by setting up the services locally.
 
-- **Node.js** (v14 or higher) & **npm** (or yarn) – for frontend dependencies.
-- **Go** (v1.18 or higher) – for backend.
-- **PostgreSQL** – Database server.
+### Method 1: Using Docker (Recommended)
 
-### Setup Instructions
+#### Prerequisites
+- **Docker** and **Docker Compose** installed on your system
+- Git (to clone the repository)
+
+#### Setup Instructions
 
 1. **Clone the repository:**
+   ```bash
+   git clone https://github.com/helioLJ/TweetVault.git
+   cd TweetVault
+   ```
 
+2. **Start the application:**
+   ```bash
+   docker compose up --build
+   ```
+
+   This command will:
+   - Build all necessary Docker images
+   - Start the PostgreSQL database
+   - Start the Go backend with hot-reload
+   - Start the Next.js frontend with hot-reload
+   - Set up all required networking and volumes
+
+3. **Access the application:**
+   - Frontend: [http://localhost:3000](http://localhost:3000)
+   - Backend API: [http://localhost:8080](http://localhost:8080)
+   - Database: localhost:5432
+
+#### Useful Docker Commands
+
+- **Stop the application:**
+  ```bash
+   docker compose down
+  ```
+
+- **View logs:**
+  ```bash
+  docker compose logs -f
+  ```
+
+- **Rebuild and restart a specific service:**
+  ```bash
+  docker compose up -d --build <service_name>
+  # Example: docker compose up -d --build backend
+  ```
+
+- **Remove all data (including database):**
+  ```bash
+  docker compose down -v
+  ```
+
+### Method 2: Local Development Setup
+
+#### Prerequisites
+- **Node.js** (v14 or higher) & **npm** (or yarn) – for frontend
+- **Go** (v1.18 or higher) – for backend
+- **PostgreSQL** – Database server
+
+#### Setup Instructions
+
+1. **Clone the repository:**
    ```bash
    git clone https://github.com/helioLJ/TweetVault.git
    cd TweetVault
    ```
 
 2. **Frontend Setup:**
-
    ```bash
    cd frontend
    npm install
    npm run dev
    ```
-
-   This will start the frontend development server (typically on [http://localhost:3000](http://localhost:3000)).
+   The frontend development server will start on [http://localhost:3000](http://localhost:3000)
 
 3. **Backend Setup:**
-
-   - Set up your database and ensure PostgreSQL is running.
-   - Configure your environment variables. You might create a `.env` file in the backend root with settings such as:
-     
+   - Set up your database and ensure PostgreSQL is running
+   - Configure your environment variables in `.env`:
      ```env
      DB_HOST=localhost
      DB_PORT=5432
@@ -103,27 +155,20 @@ The backend's entry point is located at `backend/cmd/server/main.go`, and routes
      DB_NAME=tweetvault
      SERVER_PORT=8080
      ```
-     
    - Install Go dependencies and run the server:
-
      ```bash
      cd backend
      go mod tidy
      go run cmd/server/main.go # or `air` if you have it installed
      ```
+   The backend server will start on [http://localhost:8080](http://localhost:8080)
 
-     The backend server will start (typically on [http://localhost:8080](http://localhost:8080)) and automatically run migrations as well as insert standard tags if missing.
+### Development
 
-4. **Exporting Your Twitter Bookmarks:**
-
-   Before you can use TweetVault, you'll need to export your Twitter bookmarks:
-   
-   1. Install the [Twitter Web Exporter](https://github.com/prinsss/twitter-web-exporter) browser extension
-   2. Navigate to your Twitter bookmarks page
-   3. Use the extension to:
-      - Export the bookmark data as JSON
-      - Export the media files as ZIP
-   4. Use TweetVault's upload interface to import the exported ZIP archive
+Both setup methods support hot-reload for development:
+- Frontend changes will automatically refresh in the browser
+- Backend changes will automatically rebuild and restart the server (using `air` or Docker)
+- Database data persists between restarts
 
 ---
 
